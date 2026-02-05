@@ -110,8 +110,8 @@ end
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
     # @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
-    @test_throws "length of PatternVector for pattern PaddedEvenOddPattern{Float64} must be greater or equal to 4. Provided is 3." PatternVector(3, PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0))
-    @test_throws "Trying to getindex with an AbstractRange of length" av[1:3]
+    @test_throws DomainError PatternVector(3, PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0))
+    @test_throws DomainError av[1:3]
     @test av[1] == -2.0
     @test av[2] == 3.0
     @test av[3] == 2.0
@@ -192,8 +192,8 @@ end
 @testset "Mixtures" begin
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
-    @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
-    @test_throws "Trying to getindex with an AbstractRange of length" av[1:3]
+    @test_throws DomainError AlternatePaddedVector(1, 1, 1, 1, 3)
+    @test_throws DomainError av[1:3]
     @test av[1] == -2.0
     @test av[2] == 3.0
     @test av[3] == 2.0

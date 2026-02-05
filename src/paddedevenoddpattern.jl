@@ -19,7 +19,7 @@ end
 function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: Int, P <: PaddedEvenOddPattern}
     new_len = length(el)
     minimum_size = pattern_minimum_size(P)
-    (minimum_size <= new_len) || throw("Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size.")
+    (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
     new_len = length(el)
     @views @inbounds bound_initial_value = getindex_pattern(x, first_idx, n)
