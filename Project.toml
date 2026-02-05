@@ -1,0 +1,23 @@
+name = "PatternVectors"
+uuid = "92638b5e-77be-42fd-8598-99573a47aaa0"
+authors = ["Nicola <nicola.scaramuzzino@yandex.com> and contributors"]
+version = "0.1.0"
+
+[deps]
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+
+[weakdeps]
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[extensions]
+SparseArraysExt = "SparseArrays"
+
+[compat]
+ChainRulesCore = "1"
+julia = "1.9, 1.10, 1.11, 1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
