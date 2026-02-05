@@ -1,5 +1,4 @@
 [deps]
-PatternVectors = "92638b5e-77be-42fd-8598-99573a47aaa0"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Franklin = "713c75ef-9fc9-4b05-94a9-213340da978e"
