@@ -16,7 +16,10 @@ function getindex_pattern(x::PaddedEvenOddPattern, ind::Int, n::Int)
     ifelse(ind == 1, x.bound_initial_value, ifelse(ind == n, x.bound_final_value, ifelse(isodd(ind), x.value_odd, x.value_even)))
 end
 
-function getindex_pattern_range(x::PaddedEvenOddPattern, el::AbstractRange{T}, n::Int) where {T <: Int}
+function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: Int, P <: PaddedEvenOddPattern}
+    new_len = length(el)
+    minimum_size = pattern_minimum_size(P)
+    (minimum_size <= new_len) || throw("Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size.")
     first_idx = el.start
     new_len = length(el)
     @views @inbounds bound_initial_value = getindex_pattern(x, first_idx, n)
@@ -47,13 +50,6 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{M}, V <: P
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedEvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
-
-# function ChainRulesCore.rrule(::Type{V}, args...) where {V <: PaddedEvenOddPattern{T}} where {T}
-# function AbstractPattern_pb(Δapv)
-# NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(V))...
-# end
-# return PaddedEvenOddPattern(args...), AbstractPattern_pb
-# end
 
 function ChainRulesCore.rrule(::Type{PaddedEvenOddPattern}, args...)
     function AbstractPattern_pb(Δapv)

@@ -15,9 +15,11 @@ function getindex_pattern(x::EvenOddPattern, ind::Int, ::Int)
     ifelse(isodd(ind), x.value_odd, x.value_even)
 end
 
-function getindex_pattern_range(x::EvenOddPattern, el::AbstractRange{T}, n::Int) where {T <: Int}
-    first_idx = el.start
+function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: Int, P <: EvenOddPattern}
     new_len = length(el)
+    minimum_size = pattern_minimum_size(P)
+    (minimum_size <= new_len) || throw("Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size.")
+    first_idx = el.start
     @views @inbounds odd_value = getindex_pattern(x, first_idx, n)
     @views @inbounds even_value = getindex_pattern(x, first_idx + step(el), n)
     return new_len, EvenOddPattern(odd_value, even_value)

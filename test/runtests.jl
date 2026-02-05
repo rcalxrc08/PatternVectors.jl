@@ -41,12 +41,12 @@ function AlternateVector(a::T, b::T, N) where {T}
 end
 
 function AlternatePaddedVector(a::T, b::T, c::T, d::T, N) where {T}
-    pattern = PatternVectors.PaddedEvenOddPattern(a, b, c, d)
+    pattern = PaddedEvenOddPattern(a, b, c, d)
     return PatternVector(N, pattern)
 end
 
 @testset "PatternVectors" begin
-    @test_throws "length of AlternateVector must be greater than one." AlternateVector(1, 1, 1)
+    @test_throws "length of PatternVector for pattern" PatternVector(1, EvenOddPattern(0, 0))
     N = 11
     av = AlternateVector(-2.0, 3.0, N)
     @test av[1] == -2.0
@@ -109,7 +109,8 @@ end
 @testset "AlternatePaddedVector" begin
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
-    @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
+    # @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
+    @test_throws "length of PatternVector for pattern PaddedEvenOddPattern{Float64} must be greater or equal to 4. Provided is 3." PatternVector(3, PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0))
     @test_throws "Trying to getindex with an AbstractRange of length" av[1:3]
     @test av[1] == -2.0
     @test av[2] == 3.0

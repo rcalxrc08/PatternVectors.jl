@@ -10,7 +10,7 @@ struct PatternVector{T, P} <: AbstractArray{T, 1}
     pattern::P
     function PatternVector(n::Int64, pattern::P) where {P <: AbstractPattern{T}} where {T}
         minimum_size = pattern_minimum_size_defer(P)
-        (minimum_size <= n) || throw("length of PatternVector for pattern $P must be greater than $minimum_size. Provided is $n.")
+        (minimum_size <= n) || throw("length of PatternVector for pattern $P must be greater or equal to $minimum_size. Provided is $n.")
         return new{T, P}(n, pattern)
     end
 end
