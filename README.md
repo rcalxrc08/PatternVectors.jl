@@ -1,7 +1,7 @@
 # PatternVectors
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://rcalxrc08.github.io/PatternVectors.jl/)
-[![Build Status](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![CI](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/rcalxrc08/PatternVectors.jl/graph/badge.svg?token=GqpkxPrlXg)](https://codecov.io/gh/rcalxrc08/PatternVectors.jl)
 
 ##### This is a Julia package containing some useful functionality to generate Arrays with specific patterns.
