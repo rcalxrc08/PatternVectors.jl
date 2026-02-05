@@ -43,5 +43,5 @@ end
 
 #Since we use a sum function in the pullback, we implement it for FillPattern
 function Base.sum(x::PatternVector{T, P}) where {T, P <: FillPattern{T}}
-    return x.n * x.value
+    return x.n * x.pattern.value
 end

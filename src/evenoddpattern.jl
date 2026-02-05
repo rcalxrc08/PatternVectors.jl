@@ -56,5 +56,6 @@ end
 function Base.sum(x::PatternVector{T, P}) where {T, P <: EvenOddPattern{T}}
     isfinalodd = isodd(x.n)
     nhalf = div(x.n, 2)
-    return muladd(nhalf, x.value_even, (nhalf + isfinalodd) * x.value_odd)
+    pattern = x.pattern
+    return muladd(nhalf, pattern.value_even, (nhalf + isfinalodd) * pattern.value_odd)
 end

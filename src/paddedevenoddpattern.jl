@@ -75,7 +75,8 @@ end
 
 #Since we use a sum function in the pullback, we implement it for PaddedEvenOddPattern
 function Base.sum(x::PatternVector{T, P}) where {T, P <: PaddedEvenOddPattern{T}}
+    pattern = x.pattern
     isfinalodd = isodd(x.n)
     nhalf = div(x.n, 2) - 1
-    return muladd(nhalf, x.value_odd, muladd(x.value_even, nhalf + isfinalodd, x.bound_initial_value + x.bound_final_value))
+    return muladd(nhalf, pattern.value_odd, muladd(pattern.value_even, nhalf + isfinalodd, pattern.bound_initial_value + pattern.bound_final_value))
 end
