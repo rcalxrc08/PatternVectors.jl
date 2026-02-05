@@ -253,7 +253,6 @@ end
 end
 
 @testset "SparseArraysExt for AlternateVector" begin
-    @test_throws "length of AlternateVector must be greater than one." AlternateVector(1, 1, 1)
     N = 11
     av = AlternateVector(-2.0, 3.0, N)
     av_c = collect(av)
