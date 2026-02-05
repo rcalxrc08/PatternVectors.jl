@@ -25,7 +25,6 @@ function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVec
     args = bc_f.args
     axes_result = Broadcast.combine_axes(args...)
     value = func(flat_index.(args, 1)...)
-    #Following is wrong
     return length(first(axes_result)), FillPattern(value)
 end
 
