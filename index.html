@@ -262,16 +262,16 @@ x=PatternVector(<span class="hljs-number">10</span>,EvenOddPattern(<span class="
 y=randn(<span class="hljs-number">10</span>)
 z=PatternVector(<span class="hljs-number">10</span>,PaddedEvenOddPattern(<span class="hljs-number">0.2</span>,-<span class="hljs-number">2.0</span>,<span class="hljs-number">4.0</span>,<span class="hljs-number">2.3</span>))
 @. sin(x)*y+z</code></pre><pre><code class="plaintext hljs">10-element Vector{Float64}:
-  0.3520202083792518
- -2.7472951054064323
-  4.089137826969755
- -2.0715830639472403
-  4.17695289970235
- -1.7281106730575533
-  3.7785109312189573
- -0.8327206273563452
-  4.138318180102324
-  1.0892350000225401</code></pre>
+  0.28573649855266525
+ -2.507411323254959
+  4.099404705355817
+ -2.523210328568391
+  4.103140020182323
+ -1.039918101767383
+  4.0402646359517735
+ -1.1264759497780221
+  3.708676217926013
+  3.908090249287452</code></pre>
 <p>      </div>
     </div>
   </div>
@@ -288,8 +288,8 @@ x=PatternVector(n,EvenOddPattern(<span class="hljs-number">0.2</span>,<span clas
 y=randn(n)
 x_c=collect(x)
 <span class="hljs-meta">@btime</span> @. $x*$y;
-<span class="hljs-meta">@btime</span> @. $x_c*$y;</code></pre><pre><code class="plaintext hljs">  3.108 μs (3 allocations: 78.20 KiB)
-  3.288 μs (3 allocations: 78.20 KiB)
+<span class="hljs-meta">@btime</span> @. $x_c*$y;</code></pre><pre><code class="plaintext hljs">  2.575 μs (3 allocations: 78.20 KiB)
+  3.525 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Flipping sign based on index and sum</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
@@ -342,11 +342,11 @@ f_x=@. sin(x)+x*cos(x)
 <span class="hljs-meta">@btime</span> f_std_scalar_2($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec_linear_algebra($f_x);
-<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  9.267 μs (0 allocations: 0 bytes)
+<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  9.258 μs (0 allocations: 0 bytes)
   9.267 μs (0 allocations: 0 bytes)
-  6.249 μs (6 allocations: 156.39 KiB)
-  12.804 μs (2 allocations: 78.16 KiB)
-  3.558 μs (3 allocations: 78.20 KiB)
+  6.254 μs (6 allocations: 156.39 KiB)
+  12.743 μs (2 allocations: 78.16 KiB)
+  3.682 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Simpson Integration</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools,LinearAlgebra
@@ -393,11 +393,11 @@ f_x2=@. sin(x2)+x2*cos(x2)
 <span class="hljs-meta">@btime</span> f_simpson_std_vec($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_std_vec_linear_algebra($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_apv($f_x2);
-<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.267 μs (0 allocations: 0 bytes)
-  5.490 μs (6 allocations: 156.39 KiB)
-  3.799 μs (3 allocations: 78.20 KiB)
-  4.005 μs (3 allocations: 78.20 KiB)
-  9.277 μs (0 allocations: 0 bytes)
+<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.257 μs (0 allocations: 0 bytes)
+  7.050 μs (6 allocations: 156.39 KiB)
+  3.511 μs (3 allocations: 78.20 KiB)
+  4.068 μs (3 allocations: 78.20 KiB)
+  9.278 μs (0 allocations: 0 bytes)
 </code></pre>
 <p>To be noticed the performance improvements thanks to the usage of AlternatePaddedVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.</p>
 <p>      </div>
@@ -424,22 +424,28 @@ f_x2=@. sin(x2)+x2*cos(x2)
 </li>
 <li><p>Implement the interface:</p>
 <ul>
-<li><p>pattern<em>minimum</em>size: define the minimum size for your type</p>
+<li><p>pattern&#95;minimum&#95;size: define the minimum size for your type</p>
 </li>
-<li><p>getindex_pattern: define the logic to extract scalars</p>
+<li><p>getindex&#95;pattern: define the logic to extract scalars</p>
 </li>
-<li><p>getindex<em>pattern</em>range: define the logic to extract ranges</p>
+<li><p>getindex&#95;pattern_range: define the logic to extract ranges</p>
 </li>
-<li><p>materialize_pattern: define the way to compute broadcasted functions with the new pattern</p>
-</li>
-</ul>
+<li><p>materialize&#95;pattern: define the way to compute broadcasted functions with the new pattern</p>
 </li>
 </ul>
-<p>And you are ready to go&#33; In case you want to use your new pattern in AD applications you will have to provide two additional implementations:</p>
+</li>
+</ul>
+<p>In case you need to mix your pattern with other existing patterns, you will have to specify we is the more general pattern able to store both:</p>
+<ul>
+<li><p>determine&#95;mixed&#95;pattern&#40;::Type&#123;T&#125;, ::Type&#123;V&#125;&#41; where &#123;T &lt;: MyNewPattern&#123;M&#125;, V &lt;: MyOldPattern&#123;N}} where &#123;M, N&#125; &#61; MyWinningPattern&#123;promote_type&#40;M, N&#41;&#125;</p>
+</li>
+</ul>
+<p>And you are ready to go&#33;</p>
+<p>In case you want to use your new pattern in AD applications you will have to provide two additional implementations:</p>
 <ul>
 <li><p>ChainRulesCore.rrule&#40;::Type&#123;ZeroPattern&#125;, args...&#41;: the rrule for the constructor of your newly defined pattern.</p>
 </li>
-<li><p>pattern<em>to</em>vector_pullback: the rrule to convert from pattern to array.</p>
+<li><p>pattern&#95;to&#95;vector&#95;pullback: the rrule to convert from pattern to array.</p>
 </li>
 </ul>
 <p>For more details have a look at the already implemented types.</p>
