@@ -45,7 +45,7 @@ function AlternatePaddedVector(a::T, b::T, c::T, d::T, N) where {T}
     return PatternVector(N, pattern)
 end
 
-@testset "PatternVectors" begin
+@testset "EvenOddPattern" begin
     @test_throws "length of PatternVector for pattern" PatternVector(1, EvenOddPattern(0, 0))
     N = 11
     av = AlternateVector(-2.0, 3.0, N)
@@ -106,7 +106,74 @@ end
     @test all(@. res_zero_d ≈ res_zero_d_r)
 end
 
-@testset "AlternatePaddedVector" begin
+@testset "FillPattern" begin
+    @test_throws "length of PatternVector for pattern" PatternVector(0, FillPattern(0))
+    N = 11
+    val = 10.0
+    av = PatternVector(N, FillPattern(val))
+    @test av[1] == val
+    @test av[2] == val
+    @test av[end] == val
+    Base.showarg(Core.CoreSTDOUT(), av, nothing)
+    println(av)
+    @show av
+    av_c = collect(av)
+    @test typeof(av[1:2]) <: PatternVector
+    @test typeof(av[:]) <: PatternVector
+    @test typeof(1 .+ av) <: PatternVector
+    @test typeof(av .+ 1) <: PatternVector
+    @test typeof(sin.(av)) <: PatternVector
+    @test !(typeof(av .+ tuple(ones(N)...)) <: PatternVector)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: PatternVector)
+    @test typeof(@. sin(av) * av + 1 + av) <: PatternVector
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: PatternVector
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test all(@. av ≈ av_c)
+    @test all(@. sin(av) ≈ sin(av_c))
+    @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
+    @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+end
+@testset "ZeroPattern" begin
+    @test_throws "length of PatternVector for pattern" PatternVector(0, ZeroPattern(0))
+    N = 11
+    val = 0.0
+    av = PatternVector(N, PatternVectors.ZeroPattern(0.0))
+    @test av[1] == val
+    @test av[2] == val
+    @test av[end] == val
+    Base.showarg(Core.CoreSTDOUT(), av, nothing)
+    println(av)
+    @show av
+    av_c = collect(av)
+    @test typeof(av[1:2]) <: PatternVector
+    @test typeof(av[:]) <: PatternVector
+    @test typeof(1 .+ av) <: PatternVector
+    @test typeof(av .+ 1) <: PatternVector
+    @test typeof(sin.(av)) <: PatternVector
+    @test !(typeof(av .+ tuple(ones(N)...)) <: PatternVector)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: PatternVector)
+    @test typeof(@. sin(av) * av + 1 + av) <: PatternVector
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: PatternVector
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test all(@. av ≈ av_c)
+    @test all(@. sin(av) ≈ sin(av_c))
+    @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
+    @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+    av2 = PatternVector(N, FillPattern(val))
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+end
+
+@testset "PaddedEvenOddPattern" begin
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
     # @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
@@ -218,6 +285,10 @@ end
     @test typeof(vec_one .+ av) <: AlternatePaddedVector
     @test typeof(vec_zero .+ av) <: AlternatePaddedVector
     @test typeof(vec_zero .+ av .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector
+    @test !(typeof(vec_zero .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector)
+    @test !(typeof(vec_zero .+ vec_one .+ vec_zero) <: AlternatePaddedVector)
+    @test !(typeof(av_1 .+ vec_one) <: AlternatePaddedVector)
+    @test !(typeof(av_1 .+ vec_zero) <: AlternatePaddedVector)
 
     @test typeof(av_1 .+ av) <: AlternatePaddedVector
     #test sparse
@@ -252,7 +323,7 @@ end
     @test all(@. res_zero_d ≈ res_zero_d_r)
 end
 
-@testset "SparseArraysExt for AlternateVector" begin
+@testset "SparseArraysExt for EvenOddPattern" begin
     N = 11
     av = AlternateVector(-2.0, 3.0, N)
     av_c = collect(av)
@@ -263,7 +334,7 @@ end
     @test all(@. av * sparse_p ≈ av_c * sparse_p)
 end
 
-@testset "SparseArraysExt for AlternatePaddedVector" begin
+@testset "SparseArraysExt for PaddedEvenOddPattern" begin
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
     av_c = collect(av)
@@ -274,7 +345,7 @@ end
     @test all(@. av * sparse_p ≈ av_c * sparse_p)
 end
 
-@testset "Zygote AlternateVector" begin
+@testset "Zygote EvenOddPattern" begin
     function f_av(x)
         N = 11
         av = AlternateVector(x, -8.2 * x, N)
@@ -289,6 +360,46 @@ end
     x = 3.2
     res_av = Zygote.gradient(f_av, x)
     res_std = Zygote.gradient(f_std_av, x)
+    @test res_av[1] ≈ res_std[1]
+end
+
+@testset "Zygote FillPattern" begin
+    function f_av(x)
+        N = 11
+        pattern_fill = FillPattern(x)
+        av = PatternVector(N, pattern_fill)
+        return sum(av)
+    end
+    function f_std_apv(x)
+        N = 11
+        one_minus_one = ones(N)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    x = 3.2
+    res_av = Zygote.gradient(f_av, x)
+    res_std = Zygote.gradient(f_std_apv, x)
+    @test res_av[1] ≈ res_std[1]
+end
+
+@testset "Zygote ZeroPattern" begin
+    function f_av(x)
+        N = 11
+        pattern_zero = ZeroPattern(x)
+        pattern_fill = FillPattern(x)
+        av = PatternVector(N, pattern_fill)
+        av2 = PatternVector(N, pattern_zero)
+        return sum(av .+ av2)
+    end
+    function f_std_apv(x)
+        N = 11
+        one_minus_one = ones(N)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    x = 3.2
+    res_av = Zygote.gradient(f_av, x)
+    res_std = Zygote.gradient(f_std_apv, x)
     @test res_av[1] ≈ res_std[1]
 end
 

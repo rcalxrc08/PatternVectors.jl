@@ -12,9 +12,9 @@ pattern_minimum_size(::Type{P}) where {P <: FillPattern} = 1
 function getindex_pattern(x::FillPattern, _::Int, ::Int)
     x.value
 end
-function getindex_pattern_range(x::FillPattern, el::AbstractRange{T}, ::Int) where {T <: Int}
+function getindex_pattern_range(x::FillPattern, el::AbstractRange{T}, n::Int) where {T <: Int}
     new_len = length(el)
-    @views @inbounds bound_final_value = x[last(el)]
+    @views @inbounds bound_final_value = getindex_pattern(x, last(el), n)
     return new_len, FillPattern(bound_final_value)
 end
 
@@ -30,9 +30,9 @@ end
 # Function to determine the mixed pattern type when combining various patterns
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: FillPattern{M}} where {L, M} = FillPattern{promote_type(L, M)}
 
-function ChainRulesCore.rrule(::Type{V}, args...) where {V <: FillPattern{T}} where {T}
+function ChainRulesCore.rrule(::Type{FillPattern}, args...)
     function AbstractPattern_pb(Δapv)
-        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(V))...
+        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(FillPattern))...
     end
     return FillPattern(args...), AbstractPattern_pb
 end

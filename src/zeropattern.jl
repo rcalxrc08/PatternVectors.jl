@@ -34,7 +34,7 @@ function Base.materialize(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVector
     return PatternVector(length_first_axes_result, pattern)
 end
 
-function ChainRulesCore.rrule(::Type{V}, args...) where {V <: ZeroPattern{T}} where {T}
+function ChainRulesCore.rrule(::Type{ZeroPattern}, args...)
     function AbstractPattern_pb(_)
         NoTangent(), NoTangent()
     end
