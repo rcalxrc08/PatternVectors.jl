@@ -4,8 +4,6 @@ abstract type AbstractArrayStylePatternVector <: Broadcast.AbstractArrayStyle{1}
 struct ArrayStylePatternVector{P <: AbstractPattern} <: AbstractArrayStylePatternVector end
 # Main link between PatternVector and its Broadcast style, unfortunately we are carrying the element type too.
 Base.BroadcastStyle(::Type{<:PatternVector{T, P}}) where {T, P <: AbstractPattern} = ArrayStylePatternVector{P}()
-# Mixture pattern determination for same pattern
-# determine_mixed_pattern(::Type{T}, ::Type{T}) where {T <: AbstractPattern} = T
 # Mixture pattern determination for pattern with Unknown
 determine_mixed_pattern(::Type{T}, ::Type{UnknownPattern}) where {T <: AbstractPattern} = T
 determine_mixed_pattern(::Type{UnknownPattern}, ::Type{T}) where {T <: AbstractPattern} = T
