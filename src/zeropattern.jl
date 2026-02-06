@@ -8,7 +8,7 @@ struct ZeroPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::ZeroPattern) = 1
+pattern_minimum_size(::ZeroPattern) = 1 # COV_EXCL_LINE
 
 function getindex_pattern(::ZeroPattern{T}, ::Int, ::Int) where {T}
     zero(T)

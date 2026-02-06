@@ -9,7 +9,7 @@ struct InitialValuePattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::InitialValuePattern) = 2
+pattern_minimum_size(::InitialValuePattern) = 2 # COV_EXCL_LINE
 
 function getindex_pattern(x::InitialValuePattern, ind::Int, ::Int)
     ifelse(ind == 1, x.first_value, x.other_value)

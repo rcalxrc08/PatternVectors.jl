@@ -9,7 +9,7 @@ struct EvenOddPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::EvenOddPattern) = 2
+pattern_minimum_size(::EvenOddPattern) = 2 # COV_EXCL_LINE
 
 function getindex_pattern(x::EvenOddPattern, ind::Int, ::Int)
     ifelse(isodd(ind), x.value_odd, x.value_even)
