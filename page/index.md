@@ -230,15 +230,20 @@ In case you need a new pattern, the following steps are needed:
 - Define a container (namely MyNewPattern{T}) inheriting from AbstractPattern{T} where T is the data type you are going to store in the array.
 - Define a constructor for it.
 - Implement the interface:
-  - pattern_minimum_size: define the minimum size for your type
-  - getindex_pattern: define the logic to extract scalars
-  - getindex_pattern_range: define the logic to extract ranges
-  - materialize_pattern: define the way to compute broadcasted functions with the new pattern
+  - pattern\_minimum\_size: define the minimum size for your type
+  - getindex\_pattern: define the logic to extract scalars
+  - getindex\_pattern_range: define the logic to extract ranges
+  - materialize\_pattern: define the way to compute broadcasted functions with the new pattern
+
+
+In case you need to mix your pattern with other existing patterns, you will have to specify we is the more general pattern able to store both:
+- determine\_mixed\_pattern(::Type{T}, ::Type{V}) where {T <: MyNewPattern{M}, V <: MyOldPattern{N}} where {M, N} = MyWinningPattern{promote\_type(M, N)}
 
 And you are ready to go!
+
 In case you want to use your new pattern in AD applications you will have to provide two additional implementations:
 - ChainRulesCore.rrule(::Type{ZeroPattern}, args...): the rrule for the constructor of your newly defined pattern.
-- pattern_to_vector_pullback: the rrule to convert from pattern to array.
+- pattern\_to\_vector\_pullback: the rrule to convert from pattern to array.
 
 For more details have a look at the already implemented types.
 
