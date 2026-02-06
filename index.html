@@ -92,6 +92,14 @@ padding-right:  10px;
           <a class="nav-link" href="#performances">Performances</a>
         </li>
         
+        <li class="nav-item">
+          <a class="nav-link" href="#gpu">GPU</a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="#new_patterns">New Patterns</a>
+        </li>
+        
       </ul>
     </div>
   </div>
@@ -118,18 +126,28 @@ padding-right:  10px;
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>About this Package</h2> <div class="lead">PatternVectors.jl is a Julia package containing some useful array representation for peculiar one dimensional arrays patterns.</div> It currently contains the following types:</p>
+        <h2>About this Package</h2> <div class="lead">PatternVectors.jl is a Julia package containing some useful array representation for peculiar one dimensional arrays patterns.</div> It currently contains the following pattern types:</p>
 <ul>
-<li><p>AlternateVector: convenient representation for vectors of the form:</p>
+<li><p>ZeroPattern: convenient representation for vectors of the form:</p>
+</li>
+</ul>
+<pre><code class="julia hljs">[<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0.</span>..]</code></pre>
+<ul>
+<li><p>FillPattern: convenient representation for vectors of the form:</p>
+</li>
+</ul>
+<pre><code class="julia hljs">[a,a,a,a,a,a...]</code></pre>
+<ul>
+<li><p>EvenOddPattern: convenient representation for vectors of the form:</p>
 </li>
 </ul>
 <pre><code class="julia hljs">[a,b,a,b,a,b...]</code></pre>
 <ul>
-<li><p>AlternatePaddedVector: convenient representation for vectors of the form:</p>
+<li><p>PaddedEvenOddPattern: convenient representation for vectors of the form:</p>
 </li>
 </ul>
 <pre><code class="julia hljs">[x,a,b,a,b,a,b...,y]</code></pre>
-<p>The module is standalone.       </div>
+<p>Defining a new pattern is easy and fully supported by the library. The module is standalone.       </div>
     </div>
   </div>
 </section>
@@ -244,16 +262,16 @@ x=PatternVector(<span class="hljs-number">10</span>,EvenOddPattern(<span class="
 y=randn(<span class="hljs-number">10</span>)
 z=PatternVector(<span class="hljs-number">10</span>,PaddedEvenOddPattern(<span class="hljs-number">0.2</span>,-<span class="hljs-number">2.0</span>,<span class="hljs-number">4.0</span>,<span class="hljs-number">2.3</span>))
 @. sin(x)*y+z</code></pre><pre><code class="plaintext hljs">10-element Vector{Float64}:
-  0.31751110018525464
- -1.1172772789301693
-  3.986881260753957
- -4.0840380665212574
-  4.028042544967813
- -1.0826612092925398
-  3.8075936274215065
- -1.8423333089019045
-  3.7550444642049743
-  1.8213766139055212</code></pre>
+  0.3520202083792518
+ -2.7472951054064323
+  4.089137826969755
+ -2.0715830639472403
+  4.17695289970235
+ -1.7281106730575533
+  3.7785109312189573
+ -0.8327206273563452
+  4.138318180102324
+  1.0892350000225401</code></pre>
 <p>      </div>
     </div>
   </div>
@@ -270,8 +288,8 @@ x=PatternVector(n,EvenOddPattern(<span class="hljs-number">0.2</span>,<span clas
 y=randn(n)
 x_c=collect(x)
 <span class="hljs-meta">@btime</span> @. $x*$y;
-<span class="hljs-meta">@btime</span> @. $x_c*$y;</code></pre><pre><code class="plaintext hljs">  3.095 μs (3 allocations: 78.20 KiB)
-  3.554 μs (3 allocations: 78.20 KiB)
+<span class="hljs-meta">@btime</span> @. $x_c*$y;</code></pre><pre><code class="plaintext hljs">  3.108 μs (3 allocations: 78.20 KiB)
+  3.288 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Flipping sign based on index and sum</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
@@ -326,9 +344,9 @@ f_x=@. sin(x)+x*cos(x)
 <span class="hljs-meta">@btime</span> f_std_vec_linear_algebra($f_x);
 <span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  9.267 μs (0 allocations: 0 bytes)
   9.267 μs (0 allocations: 0 bytes)
-  7.173 μs (6 allocations: 156.39 KiB)
-  12.925 μs (2 allocations: 78.16 KiB)
-  3.708 μs (3 allocations: 78.20 KiB)
+  6.249 μs (6 allocations: 156.39 KiB)
+  12.804 μs (2 allocations: 78.16 KiB)
+  3.558 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Simpson Integration</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools,LinearAlgebra
@@ -376,12 +394,55 @@ f_x2=@. sin(x2)+x2*cos(x2)
 <span class="hljs-meta">@btime</span> f_simpson_std_vec_linear_algebra($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_apv($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.267 μs (0 allocations: 0 bytes)
-  7.203 μs (6 allocations: 156.39 KiB)
-  4.247 μs (3 allocations: 78.20 KiB)
-  4.095 μs (3 allocations: 78.20 KiB)
+  5.490 μs (6 allocations: 156.39 KiB)
+  3.799 μs (3 allocations: 78.20 KiB)
+  4.005 μs (3 allocations: 78.20 KiB)
   9.277 μs (0 allocations: 0 bytes)
 </code></pre>
 <p>To be noticed the performance improvements thanks to the usage of AlternatePaddedVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.</p>
+<p>      </div>
+    </div>
+  </div>
+</section>
+<section id="gpu" class="scrollspy section-bg-color">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10 mx-auto">
+        <h2>GPU Support</h2> The main objective of this library is to write code without iterating on indices for both cpu and gpu support. The main class is PatternVector which, unlike the standard arrays in julia, it is an immutable object, hence we can send it to gpu without issues, and being in most of the cases &#40;up to the client&#41; a lightweight object, this sending operation is efficient.       </div>
+    </div>
+  </div>
+</section>
+<section id="new_patterns" class="scrollspy">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10 mx-auto">
+        <h2>New Patterns Definition</h2> In most of the cases the provided patterns suffice the applications.  In case you need a new pattern, the following steps are needed:</p>
+<ul>
+<li><p>Define a container &#40;namely MyNewPattern&#123;T&#125;&#41; inheriting from AbstractPattern&#123;T&#125; where T is the data type you are going to store in the array.</p>
+</li>
+<li><p>Define a constructor for it.</p>
+</li>
+<li><p>Implement the interface:</p>
+<ul>
+<li><p>pattern<em>minimum</em>size: define the minimum size for your type</p>
+</li>
+<li><p>getindex_pattern: define the logic to extract scalars</p>
+</li>
+<li><p>getindex<em>pattern</em>range: define the logic to extract ranges</p>
+</li>
+<li><p>materialize_pattern: define the way to compute broadcasted functions with the new pattern</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>And you are ready to go&#33; In case you want to use your new pattern in AD applications you will have to provide two additional implementations:</p>
+<ul>
+<li><p>ChainRulesCore.rrule&#40;::Type&#123;ZeroPattern&#125;, args...&#41;: the rrule for the constructor of your newly defined pattern.</p>
+</li>
+<li><p>pattern<em>to</em>vector_pullback: the rrule to convert from pattern to array.</p>
+</li>
+</ul>
+<p>For more details have a look at the already implemented types.</p>
 <p>      </div>
     </div>
   </div>
