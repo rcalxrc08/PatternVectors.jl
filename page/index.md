@@ -3,17 +3,28 @@
     ============================== -->
 \begin{section}{title="About this Package", name="About"}
 \lead{PatternVectors.jl is a Julia package containing some useful array representation for peculiar one dimensional arrays patterns.}
-It currently contains the following types:
+It currently contains the following pattern types:
+- ZeroPattern: convenient representation for vectors of the form:
+	`````
+	[0,0,0,0,0,0...]
+	`````
+	
+- FillPattern: convenient representation for vectors of the form:
+	`````
+	[a,a,a,a,a,a...]
+	`````
 
-- AlternateVector: convenient representation for vectors of the form:
+- EvenOddPattern: convenient representation for vectors of the form:
 	`````
 	[a,b,a,b,a,b...]
 	`````
 	
-- AlternatePaddedVector: convenient representation for vectors of the form:
+- PaddedEvenOddPattern: convenient representation for vectors of the form:
     `````
     [x,a,b,a,b,a,b...,y]
     `````
+
+Defining a new pattern is easy and fully supported by the library.
 The module is standalone.
 \end{section}
 \begin{section}{title="Getting Started", name="Usage"}
@@ -204,5 +215,31 @@ f_x2=@. sin(x2)+x2*cos(x2)
 @btime f_simpson_apv_linear_algebra($f_x2);
 ```
 To be noticed the performance improvements thanks to the usage of AlternatePaddedVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.
+
+\end{section}
+
+\begin{section}{title="GPU Support", name="GPU"}
+The main objective of this library is to write code without iterating on indices for both cpu and gpu support.
+The main class is PatternVector which, unlike the standard arrays in julia, it is an immutable object, hence we can send it to gpu without issues,
+and being in most of the cases (up to the client) a lightweight object, this sending operation is efficient.
+\end{section}
+
+\begin{section}{title="New Patterns Definition", name="New Patterns"}
+In most of the cases the provided patterns suffice the applications. 
+In case you need a new pattern, the following steps are needed:
+- Define a container (namely MyNewPattern{T}) inheriting from AbstractPattern{T} where T is the data type you are going to store in the array.
+- Define a constructor for it.
+- Implement the interface:
+  - pattern_minimum_size: define the minimum size for your type
+  - getindex_pattern: define the logic to extract scalars
+  - getindex_pattern_range: define the logic to extract ranges
+  - materialize_pattern: define the way to compute broadcasted functions with the new pattern
+
+And you are ready to go!
+In case you want to use your new pattern in AD applications you will have to provide two additional implementations:
+- ChainRulesCore.rrule(::Type{ZeroPattern}, args...): the rrule for the constructor of your newly defined pattern.
+- pattern_to_vector_pullback: the rrule to convert from pattern to array.
+
+For more details have a look at the already implemented types.
 
 \end{section}
