@@ -242,7 +242,7 @@ In case you need to mix your pattern with other existing patterns, you will have
 And you are ready to go!
 
 In case you want to use your new pattern in AD applications you will have to provide two additional implementations:
-- ChainRulesCore.rrule(::Type{ZeroPattern}, args...): the rrule for the constructor of your newly defined pattern.
+- ChainRulesCore.rrule(::Type{MyNewPattern}, args...): the rrule for the constructor of your newly defined pattern.
 - pattern\_to\_vector\_pullback: the rrule to convert from pattern to array.
 
 For more details have a look at the already implemented types.
