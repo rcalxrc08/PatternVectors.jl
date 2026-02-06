@@ -10,7 +10,7 @@ struct PaddedEvenOddPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::Type{P}) where {P <: PaddedEvenOddPattern} = 4
+pattern_minimum_size(::P) where {P <: PaddedEvenOddPattern} = 4
 
 function getindex_pattern(x::PaddedEvenOddPattern, ind::Int, n::Int)
     ifelse(ind == 1, x.bound_initial_value, ifelse(ind == n, x.bound_final_value, ifelse(isodd(ind), x.value_odd, x.value_even)))
@@ -18,7 +18,7 @@ end
 
 function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: Int, P <: PaddedEvenOddPattern}
     new_len = length(el)
-    minimum_size = pattern_minimum_size(P)
+    minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
     new_len = length(el)

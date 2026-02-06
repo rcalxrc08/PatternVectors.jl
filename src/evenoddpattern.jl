@@ -9,7 +9,7 @@ struct EvenOddPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::Type{P}) where {P <: EvenOddPattern} = 2
+pattern_minimum_size(::P) where {P <: EvenOddPattern} = 2
 
 function getindex_pattern(x::EvenOddPattern, ind::Int, ::Int)
     ifelse(isodd(ind), x.value_odd, x.value_even)
@@ -17,7 +17,7 @@ end
 
 function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: Int, P <: EvenOddPattern}
     new_len = length(el)
-    minimum_size = pattern_minimum_size(P)
+    minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
     @views @inbounds odd_value = getindex_pattern(x, first_idx, n)

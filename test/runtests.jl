@@ -45,8 +45,8 @@ function AlternatePaddedVector(a::T, b::T, c::T, d::T, N) where {T}
     return PatternVector(N, pattern)
 end
 
-function minimum_pattern_size_test(::T) where {T}
-    return PatternVectors.pattern_minimum_size(T)
+function minimum_pattern_size_test(x::T) where {T}
+    return PatternVectors.pattern_minimum_size(x)
 end
 
 @testset "EvenOddPattern" begin

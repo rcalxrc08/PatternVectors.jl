@@ -8,7 +8,7 @@ struct ZeroPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::Type{P}) where {P <: ZeroPattern} = 1
+pattern_minimum_size(::P) where {P <: ZeroPattern} = 1
 
 function getindex_pattern(::ZeroPattern{T}, ::Int, ::Int) where {T}
     zero(T)
