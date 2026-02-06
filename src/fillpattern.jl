@@ -7,7 +7,7 @@ struct FillPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::P) where {P <: FillPattern} = 1
+pattern_minimum_size(::FillPattern) = 1
 
 function getindex_pattern(x::FillPattern, _::Int, ::Int)
     x.value

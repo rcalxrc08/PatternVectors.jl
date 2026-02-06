@@ -10,7 +10,7 @@ struct PaddedEvenOddPattern{T} <: AbstractPattern{T}
     end
 end
 
-pattern_minimum_size(::P) where {P <: PaddedEvenOddPattern} = 4
+pattern_minimum_size(::PaddedEvenOddPattern) = 4
 
 function getindex_pattern(x::PaddedEvenOddPattern, ind::Int, n::Int)
     ifelse(ind == 1, x.bound_initial_value, ifelse(ind == n, x.bound_final_value, ifelse(isodd(ind), x.value_odd, x.value_even)))

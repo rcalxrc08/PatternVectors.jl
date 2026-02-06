@@ -9,7 +9,7 @@ struct PatternVector{T, P} <: AbstractArray{T, 1}
     n::Int64
     pattern::P
     function PatternVector(n::Int64, pattern::P) where {P <: AbstractPattern{T}} where {T}
-        minimum_size = pattern_minimum_size_defer(pattern)
+        minimum_size = pattern_minimum_size(pattern)
         (minimum_size <= n) || throw(DomainError(n, "length of PatternVector for pattern $P must be greater or equal to $minimum_size. Provided is $n."))
         return new{T, P}(n, pattern)
     end
@@ -25,10 +25,6 @@ Base.size(A::PatternVector) = (A.n,)
 
 # Allows colon indexing to return the vector itself.
 Base.getindex(x::PatternVector, ::Colon) = x
-
-function pattern_minimum_size_defer(x::P) where {P <: AbstractPattern}
-    return pattern_minimum_size(x)
-end
 
 # Defer get_index to pattern
 function Base.getindex(x::PatternVector, ind::Int)
