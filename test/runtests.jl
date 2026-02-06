@@ -45,10 +45,16 @@ function AlternatePaddedVector(a::T, b::T, c::T, d::T, N) where {T}
     return PatternVector(N, pattern)
 end
 
+function minimum_pattern_size_test(::T) where {T}
+    return PatternVectors.pattern_minimum_size(T)
+end
+
 @testset "EvenOddPattern" begin
     @test_throws "length of PatternVector for pattern" PatternVector(1, EvenOddPattern(0, 0))
     N = 11
+
     av = AlternateVector(-2.0, 3.0, N)
+    @test minimum_pattern_size_test(PatternVectors.EvenOddPattern(0, 0)) == 2
     @test av[1] == -2.0
     @test av[2] == 3.0
     @test av[end] == -2.0
@@ -104,6 +110,11 @@ end
     res_zero_d_r = @. x_zero_dim_r * av
     res_zero_d = @. x_zero_dim_r * av_c
     @test all(@. res_zero_d ≈ res_zero_d_r)
+
+    av_int = AlternateVector(-2, 3, N)
+    @test all(@. exp(av) + av_int ≈ exp(av_c) + av_int)
+    @test all(@. exp(av) + av_int ≈ av_int + exp(av))
+    @test all(@. av + av_int ≈ av_int + av)
 end
 
 @testset "FillPattern" begin
@@ -111,6 +122,7 @@ end
     N = 11
     val = 10.0
     av = PatternVector(N, FillPattern(val))
+    @test minimum_pattern_size_test(FillPattern(0)) == 1
     @test av[1] == val
     @test av[2] == val
     @test av[end] == val
@@ -143,6 +155,7 @@ end
     N = 11
     val = 0.0
     av = PatternVector(N, PatternVectors.ZeroPattern(0.0))
+    @test minimum_pattern_size_test(ZeroPattern(0)) == 1
     @test av[1] == val
     @test av[2] == val
     @test av[end] == val
@@ -176,6 +189,7 @@ end
 @testset "PaddedEvenOddPattern" begin
     N = 11
     av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
+    @test minimum_pattern_size_test(PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0)) == 4
     # @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
     @test_throws DomainError PatternVector(3, PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0))
     @test_throws DomainError av[1:3]
@@ -254,6 +268,10 @@ end
     res_zero_d_r = @. x_zero_dim_r * av
     res_zero_d = @. x_zero_dim_r * av_c
     @test all(@. res_zero_d ≈ res_zero_d_r)
+
+    av_int = AlternatePaddedVector(-2, 3, 2, 4, N)
+    @test all(@. exp(av) + av_int ≈ exp(av_c) + av_int)
+    @test all(@. exp(av) + av_int ≈ av_int + exp(av))
 end
 
 @testset "Mixtures" begin
