@@ -6,8 +6,9 @@ include("rrules.jl")
 include("zeropattern.jl")
 include("fillpattern.jl")
 include("evenoddpattern.jl")
+include("initialvaluepattern.jl")
 include("paddedevenoddpattern.jl")
 
-export PatternVector, ZeroPattern, FillPattern, EvenOddPattern, PaddedEvenOddPattern
+export PatternVector, ZeroPattern, FillPattern, EvenOddPattern, PaddedEvenOddPattern, InitialValuePattern
 
 end

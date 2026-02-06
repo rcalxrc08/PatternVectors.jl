@@ -49,6 +49,7 @@ end
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedEvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 
 function ChainRulesCore.rrule(::Type{PaddedEvenOddPattern}, args...)

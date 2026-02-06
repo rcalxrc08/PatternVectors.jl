@@ -181,6 +181,50 @@ end
     av2 = PatternVector(N, FillPattern(val))
     @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
 end
+@testset "InitialValuePattern" begin
+    @test_throws "length of PatternVector for pattern" PatternVector(0, InitialValuePattern(0, 0))
+    N = 11
+    val = 0.0
+    av = PatternVector(N, PatternVectors.InitialValuePattern(val, val + 1))
+    @test PatternVectors.pattern_minimum_size(ZeroPattern(0)) == 1
+    @test av[1] == val
+    @test av[2] == val + 1
+    @test av[end] == val + 1
+    Base.showarg(Core.CoreSTDOUT(), av, nothing)
+    println(av)
+    @show av
+    av_c = collect(av)
+    @test typeof(av[1:2]) <: PatternVector
+    @test typeof(av[:]) <: PatternVector
+    @test typeof(1 .+ av) <: PatternVector
+    @test typeof(av .+ 1) <: PatternVector
+    @test typeof(sin.(av)) <: PatternVector
+    @test !(typeof(av .+ tuple(ones(N)...)) <: PatternVector)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: PatternVector)
+    @test typeof(@. sin(av) * av + 1 + av) <: PatternVector
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: PatternVector
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test all(@. av ≈ av_c)
+    @test all(@. sin(av) ≈ sin(av_c))
+    @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
+    @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+    av2 = PatternVector(N, FillPattern(val))
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+    @test typeof((av2 .+ av).pattern) <: InitialValuePattern
+    @test typeof((PatternVector(N, ZeroPattern(val)) .+ av).pattern) <: InitialValuePattern
+
+    pattern_eo = PatternVectors.EvenOddPattern(0, 0)
+    vec2 = PatternVector(N, pattern_eo)
+    res = @. vec2 + av
+    @test typeof(res.pattern) <: PaddedEvenOddPattern
+    @test typeof((res .+ av).pattern) <: PaddedEvenOddPattern
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+end
 
 @testset "PaddedEvenOddPattern" begin
     N = 11
@@ -404,6 +448,29 @@ end
         av = PatternVector(N, pattern_fill)
         av2 = PatternVector(N, pattern_zero)
         return sum(av .+ av2)
+    end
+    function f_std_apv(x)
+        N = 11
+        one_minus_one = ones(N)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    x = 3.2
+    res_av = Zygote.gradient(f_av, x)
+    res_std = Zygote.gradient(f_std_apv, x)
+    @test res_av[1] ≈ res_std[1]
+end
+
+@testset "Zygote InitialValuePattern" begin
+    function f_av(x)
+        N = 11
+        pattern_zero = ZeroPattern(x)
+        pattern_zero2 = ZeroPattern(0)
+        pattern_iv = InitialValuePattern(x, x)
+        av = PatternVector(N, pattern_iv)
+        av2 = PatternVector(N, pattern_zero)
+        av3 = PatternVector(N, pattern_zero2)
+        return sum(av .+ av2 .+ av3)
     end
     function f_std_apv(x)
         N = 11
