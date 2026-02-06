@@ -186,6 +186,7 @@ end
     N = 11
     val = 0.0
     av = PatternVector(N, PatternVectors.InitialValuePattern(val, val + 1))
+    av33 = PatternVector(N, PatternVectors.InitialValuePattern(0, 1))
     @test PatternVectors.pattern_minimum_size(ZeroPattern(0)) == 1
     @test av[1] == val
     @test av[2] == val + 1
@@ -216,6 +217,7 @@ end
     av2 = PatternVector(N, FillPattern(val))
     @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
     @test typeof((av2 .+ av).pattern) <: InitialValuePattern
+    @test typeof((av33 .+ av).pattern) <: InitialValuePattern
     @test typeof((PatternVector(N, ZeroPattern(val)) .+ av).pattern) <: InitialValuePattern
 
     pattern_eo = PatternVectors.EvenOddPattern(0, 0)
