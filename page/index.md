@@ -14,6 +14,21 @@ It currently contains the following pattern types:
 	[a,a,a,a,a,a...]
 	`````
 
+- InitialValuePattern: convenient representation for vectors of the form:
+	`````
+	[a,b,b,b,b,b...]
+	`````
+
+- FinalValuePattern: convenient representation for vectors of the form:
+	`````
+	[a,a,a,a,a,a...,b]
+	`````
+
+- PaddedFillPattern: convenient representation for vectors of the form:
+	`````
+	[x,a,a,a,a,a...,y]
+	`````
+
 - EvenOddPattern: convenient representation for vectors of the form:
 	`````
 	[a,b,a,b,a,b...]
@@ -28,15 +43,14 @@ Defining a new pattern is easy and fully supported by the library.
 The module is standalone.
 \end{section}
 \begin{section}{title="Getting Started", name="Usage"}
-**_AlternateVector_**
+**_EvenOddPattern_**
 
-To build a AlternateVector one needs to provide:
+To build a EvenOddPattern one needs to provide:
 * the value for odd indices
 * the value for even indices
-* the length.
 The various values must be of the same type and the length must be greater than one.
-The way to build an AlternateVector is the following:
-```julia:example_build_alternate_vector
+The way to build an PatternVector with such pattern is the following:
+```julia:example_build_pattern_vector
 using PatternVectors
 value_odd=0.2
 value_even=2.3
@@ -44,17 +58,16 @@ pattern=EvenOddPattern(value_odd,value_even)
 length_av=7
 x_av=PatternVector(length_av,pattern)
 ```
-**_AlternatePaddedVector_**
+**_PaddedEvenOddPattern_**
 
-To build a AlternatePaddedVector one needs to provide: 
+To build a PaddedEvenOddPattern one needs to provide: 
 * the initial value
 * the value for even indices
 * the value for odd indices
 * the final value
-* the length
 The various values must be of the same type and the length must be greater than three.
-The way to build an AlternatePaddedVector is the following:
-```julia:example_build_alternate_padded_vector
+The way to build an PatternVector with such pattern is the following:
+```julia:example_build_pattern_padded_vector
 using PatternVectors
 initial_value=0.2
 value_odd=-0.2
@@ -64,17 +77,17 @@ length_av=7
 x_av=PatternVector(length_av,PaddedEvenOddPattern(initial_value,value_even,value_odd,final_value))
 ```
 
-**_Operation on Alternate Vectors_**
+**_Operation on Pattern Vectors_**
 
 The following applies:
-* AlternateVector/AlternatePaddedVector is closed under getindex for range of integers.
+* PatternVector is closed under getindex for range of integers.
 ```julia:example_unary_operations_1
 using PatternVectors
 apv=PatternVector(70,PaddedEvenOddPattern(0.2,-2.0,4.0,2.3))
 z_small=apv[1:7:50]
 z_small
 ```
-* Any scalar unary function applied directly to PatternVectors/AlternatePaddedVector will produce an array of the same type.
+* Any scalar unary function applied directly to PatternVectors will produce an array of the same type.
 ```julia:example_unary_operations_2
 using PatternVectors
 pattern=EvenOddPattern(0.2,-2.0)
@@ -82,13 +95,11 @@ av=PatternVector(10,pattern)
 z_sin=@. sin(av)
 z_sin
 ```
-**_Operation between Alternate Vectors_**
+**_Operation between Pattern Vectors_**
 
 The following applies:
-* Binary scalar functions between AlternateVector and AlternateVector will produce AlternateVector.
-* Binary scalar functions between AlternatePaddedVector and AlternatePaddedVector will produce AlternatePaddedVector.
-* Binary scalar functions between AlternatePaddedVector and AlternateVector will produce AlternatePaddedVector.
-* Binary scalar functions between AlternatePaddedVector/AlternateVector and **any** other type deriving from AbstractArray will produce an array of the other type.
+* Binary scalar functions between PatternVectors will produce a PatternVector.
+* Binary scalar functions between PatternVector and **any** other type deriving from AbstractArray will produce an array of the other type.
 
 ```julia:example_binary_operations
 using PatternVectors
@@ -113,7 +124,7 @@ x_c=collect(x)
 ```
 
 **_Flipping sign based on index and sum_**
-```julia:performance_test_alternate_vector
+```julia:performance_test_pattern_vector
 using PatternVectors, BenchmarkTools, LinearAlgebra
 n=10_000
 function f_std_scalar(f_x)
@@ -167,7 +178,7 @@ f_x=@. sin(x)+x*cos(x)
 @btime f_apv($f_x);
 ```
 **_Simpson Integration_**
-```julia:performance_test_alternate_padded_vector
+```julia:performance_test_pattern_padded_vector
 using PatternVectors, BenchmarkTools,LinearAlgebra
 n2=10_000
 function f_simpson_std_scalar(f_x)
@@ -214,7 +225,7 @@ f_x2=@. sin(x2)+x2*cos(x2)
 @btime f_simpson_apv($f_x2);
 @btime f_simpson_apv_linear_algebra($f_x2);
 ```
-To be noticed the performance improvements thanks to the usage of AlternatePaddedVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.
+To be noticed the performance improvements thanks to the usage of PatternVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.
 
 \end{section}
 

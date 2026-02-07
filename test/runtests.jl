@@ -32,24 +32,14 @@ function Base.BroadcastStyle(::ArrayStyleZeroDimVector, b::Broadcast.DefaultArra
     return b
 end
 
-const AlternateVector{T} = PatternVector{T, PatternVectors.EvenOddPattern{T}};
-const AlternatePaddedVector{T} = PatternVector{T, PatternVectors.PaddedEvenOddPattern{T}};
-
-function AlternateVector(a::T, b::T, N) where {T}
-    pattern = PatternVectors.EvenOddPattern(a, b)
-    return PatternVector(N, pattern)
-end
-
-function AlternatePaddedVector(a::T, b::T, c::T, d::T, N) where {T}
-    pattern = PaddedEvenOddPattern(a, b, c, d)
-    return PatternVector(N, pattern)
-end
+const AlternateVector_test{T} = PatternVector{T, PatternVectors.EvenOddPattern{T}};
+const AlternatePaddedVector_test{T} = PatternVector{T, PatternVectors.PaddedEvenOddPattern{T}};
 
 @testset "EvenOddPattern" begin
     @test_throws "length of PatternVector for pattern" PatternVector(1, EvenOddPattern(0, 0))
     N = 11
 
-    av = AlternateVector(-2.0, 3.0, N)
+    av = PatternVector(N, EvenOddPattern(-2.0, 3.0))
     @test PatternVectors.pattern_minimum_size(PatternVectors.EvenOddPattern(0, 0)) == 2
     @test av[1] == -2.0
     @test av[2] == 3.0
@@ -58,18 +48,18 @@ end
     println(av)
     @show av
     av_c = collect(av)
-    @test typeof(av[1:2]) <: AlternateVector
-    @test typeof(av[:]) <: AlternateVector
-    @test typeof(1 .+ av) <: AlternateVector
-    @test typeof(av .+ 1) <: AlternateVector
-    @test typeof(sin.(av)) <: AlternateVector
-    @test !(typeof(av .+ tuple(ones(N)...)) <: AlternateVector)
-    @test !(typeof(tuple(ones(N)...) .+ av) <: AlternateVector)
-    @test typeof(@. sin(av) * av + 1 + av) <: AlternateVector
-    @test typeof(@. sin(av) * av + 1 + exp(av)) <: AlternateVector
-    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: AlternateVector
-    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: AlternateVector
-    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: AlternateVector
+    @test typeof(av[1:2]) <: AlternateVector_test
+    @test typeof(av[:]) <: AlternateVector_test
+    @test typeof(1 .+ av) <: AlternateVector_test
+    @test typeof(av .+ 1) <: AlternateVector_test
+    @test typeof(sin.(av)) <: AlternateVector_test
+    @test !(typeof(av .+ tuple(ones(N)...)) <: AlternateVector_test)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: AlternateVector_test)
+    @test typeof(@. sin(av) * av + 1 + av) <: AlternateVector_test
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: AlternateVector_test
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: AlternateVector_test
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: AlternateVector_test
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: AlternateVector_test
     @test all(@. av ≈ av_c)
     @test all(@. sin(av) ≈ sin(av_c))
     @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
@@ -78,7 +68,7 @@ end
     @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
     @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
     @test sum(av) ≈ sum(av_c)
-    av_d = AlternateVector(Dates.Date(1992, 1, 1), Dates.Date(1992, 10, 1), N)
+    av_d = PatternVector(N, EvenOddPattern(Dates.Date(1992, 1, 1), Dates.Date(1992, 10, 1)))
     av_d_1 = collect(av_d)
     one_day = Dates.Day(1)
     res_av_with_ref = @. av_d + one_day
@@ -107,7 +97,7 @@ end
     res_zero_d = @. x_zero_dim_r * av_c
     @test all(@. res_zero_d ≈ res_zero_d_r)
 
-    av_int = AlternateVector(-2, 3, N)
+    av_int = PatternVector(N, EvenOddPattern(-2, 3))
     @test all(@. exp(av) + av_int ≈ exp(av_c) + av_int)
     @test all(@. exp(av) + av_int ≈ av_int + exp(av))
     @test all(@. av + av_int ≈ av_int + av)
@@ -126,6 +116,7 @@ end
     println(av)
     @show av
     av_c = collect(av)
+    @test sum(av) ≈ sum(av_c)
     @test typeof(av[1:2]) <: PatternVector
     @test typeof(av[:]) <: PatternVector
     @test typeof(1 .+ av) <: PatternVector
@@ -159,6 +150,7 @@ end
     println(av)
     @show av
     av_c = collect(av)
+    @test sum(av) ≈ sum(av_c)
     @test typeof(av[1:2]) <: PatternVector
     @test typeof(av[:]) <: PatternVector
     @test typeof(1 .+ av) <: PatternVector
@@ -195,6 +187,7 @@ end
     println(av)
     @show av
     av_c = collect(av)
+    @test sum(av) ≈ sum(av_c)
     @test typeof(av[1:2]) <: PatternVector
     @test typeof(av[:]) <: PatternVector
     @test typeof(1 .+ av) <: PatternVector
@@ -228,11 +221,111 @@ end
     @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
 end
 
+@testset "FinalValuePattern" begin
+    @test_throws "length of PatternVector for pattern" PatternVector(0, FinalValuePattern(0, 0))
+    N = 11
+    val = 0.0
+    av = PatternVector(N, PatternVectors.FinalValuePattern(val, val + 1))
+    av33 = PatternVector(N, PatternVectors.FinalValuePattern(0, 1))
+    @test PatternVectors.pattern_minimum_size(ZeroPattern(0)) == 1
+    @test av[1] == val
+    @test av[2] == val
+    @test av[end] == val + 1
+    Base.showarg(Core.CoreSTDOUT(), av, nothing)
+    println(av)
+    @show av
+    av_c = collect(av)
+    @test sum(av) ≈ sum(av_c)
+    @test typeof(av[1:2]) <: PatternVector
+    @test typeof(av[:]) <: PatternVector
+    @test typeof(1 .+ av) <: PatternVector
+    @test typeof(av .+ 1) <: PatternVector
+    @test typeof(sin.(av)) <: PatternVector
+    @test !(typeof(av .+ tuple(ones(N)...)) <: PatternVector)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: PatternVector)
+    @test typeof(@. sin(av) * av + 1 + av) <: PatternVector
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: PatternVector
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test all(@. av ≈ av_c)
+    @test all(@. sin(av) ≈ sin(av_c))
+    @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
+    @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+    av2 = PatternVector(N, FillPattern(val))
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+    @test typeof((av2 .+ av).pattern) <: FinalValuePattern
+    @test typeof((av33 .+ av).pattern) <: FinalValuePattern
+    @test typeof((PatternVector(N, ZeroPattern(val)) .+ av).pattern) <: FinalValuePattern
+    @test typeof((PatternVector(N, InitialValuePattern(val, val + 1)) .+ av).pattern) <: PaddedFillPattern
+    @test typeof((PatternVector(N, EvenOddPattern(val, val + 1)) .+ av).pattern) <: PaddedEvenOddPattern
+
+    pattern_eo = PatternVectors.EvenOddPattern(0, 0)
+    vec2 = PatternVector(N, pattern_eo)
+    res = @. vec2 + av
+    @test typeof(res.pattern) <: PaddedEvenOddPattern
+    @test typeof((res .+ av).pattern) <: PaddedEvenOddPattern
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+end
+
+@testset "PaddedFillPattern" begin
+    @test_throws "length of PatternVector for pattern" PatternVector(0, PaddedFillPattern(0, 0, 0))
+    N = 11
+    val = 0.0
+    av = PatternVector(N, PatternVectors.PaddedFillPattern(val, val + 1, val + 2))
+    av33 = PatternVector(N, PatternVectors.PaddedFillPattern(0, 1, 2))
+    @test PatternVectors.pattern_minimum_size(ZeroPattern(0)) == 1
+    @test av[1] == val
+    @test av[2] == val + 1
+    @test av[end] == val + 2
+    Base.showarg(Core.CoreSTDOUT(), av, nothing)
+    println(av)
+    @show av
+    av_c = collect(av)
+    @test sum(av) ≈ sum(av_c)
+    @test typeof(av[1:3]) <: PatternVector
+    @test typeof(av[:]) <: PatternVector
+    @test typeof(1 .+ av) <: PatternVector
+    @test typeof(av .+ 1) <: PatternVector
+    @test typeof(sin.(av)) <: PatternVector
+    @test !(typeof(av .+ tuple(ones(N)...)) <: PatternVector)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: PatternVector)
+    @test typeof(@. sin(av) * av + 1 + av) <: PatternVector
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: PatternVector
+    @test typeof(@. sin(cos(av)) * av * av + exp(1) + exp(av)) <: PatternVector
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: PatternVector
+    @test all(@. av ≈ av_c)
+    @test all(@. sin(av) ≈ sin(av_c))
+    @test all(@. exp(av) + av ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av)
+    @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
+    @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
+    @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+    av2 = PatternVector(N, FillPattern(val))
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+    @test typeof((av2 .+ av).pattern) <: PaddedFillPattern
+    @test typeof((av33 .+ av).pattern) <: PaddedFillPattern
+    @test typeof((PatternVector(N, ZeroPattern(val)) .+ av).pattern) <: PaddedFillPattern
+    @test typeof((PatternVector(N, InitialValuePattern(val, val + 1)) .+ av).pattern) <: PaddedFillPattern
+    @test typeof((PatternVector(N, FinalValuePattern(val, val + 1)) .+ av).pattern) <: PaddedFillPattern
+    @test typeof((PatternVector(N, EvenOddPattern(val, val + 1)) .+ av).pattern) <: PaddedEvenOddPattern
+
+    pattern_eo = PatternVectors.EvenOddPattern(0, 0)
+    vec2 = PatternVector(N, pattern_eo)
+    res = @. vec2 + av
+    @test typeof(res.pattern) <: PaddedEvenOddPattern
+    @test typeof((res .+ av).pattern) <: PaddedEvenOddPattern
+    @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+end
+
 @testset "PaddedEvenOddPattern" begin
     N = 11
-    av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
+    av = PatternVector(N, PaddedEvenOddPattern(-2.0, 3.0, 2.0, 4.0))
     @test PatternVectors.pattern_minimum_size(PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0)) == 4
-    # @test_throws "length of AlternatePaddedVector must be greater than three." AlternatePaddedVector(1, 1, 1, 1, 3)
     @test_throws DomainError PatternVector(3, PaddedEvenOddPattern(0.0, 0.0, 0.0, 0.0))
     @test_throws DomainError av[1:3]
     @test av[1] == -2.0
@@ -244,19 +337,19 @@ end
     Base.showarg(Core.CoreSTDOUT(), av, nothing)
     println(av)
     av_c = collect(av)
-    @test typeof(av[1:1:5]) <: AlternatePaddedVector
-    @test typeof(av[:]) <: AlternatePaddedVector
-    @test typeof(1 .+ av) <: AlternatePaddedVector
-    @test typeof(av .+ 1) <: AlternatePaddedVector
-    @test typeof(sin.(av)) <: AlternatePaddedVector
-    @test typeof(@. sin(av) * av + 1 + av) <: AlternatePaddedVector
-    @test typeof(@. sin(av) * av + 1 + exp(av)) <: AlternatePaddedVector
-    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: AlternatePaddedVector
-    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: AlternatePaddedVector
-    @test typeof(@. 2 + sin(av) * av + 1 + log(abs(av))) <: AlternatePaddedVector
-    @test typeof(@. 2 + sin(cos(av)) * av + 1 + exp(av) + exp(1)) <: AlternatePaddedVector
-    @test !(typeof(av .+ tuple(ones(N)...)) <: AlternatePaddedVector)
-    @test !(typeof(tuple(ones(N)...) .+ av) <: AlternateVector)
+    @test typeof(av[1:1:5]) <: AlternatePaddedVector_test
+    @test typeof(av[:]) <: AlternatePaddedVector_test
+    @test typeof(1 .+ av) <: AlternatePaddedVector_test
+    @test typeof(av .+ 1) <: AlternatePaddedVector_test
+    @test typeof(sin.(av)) <: AlternatePaddedVector_test
+    @test typeof(@. sin(av) * av + 1 + av) <: AlternatePaddedVector_test
+    @test typeof(@. sin(av) * av + 1 + exp(av)) <: AlternatePaddedVector_test
+    @test typeof(@. sin(av) * av * av + 1 + exp(av)) <: AlternatePaddedVector_test
+    @test typeof(@. 2 + sin(av) * av + 1 + exp(av)) <: AlternatePaddedVector_test
+    @test typeof(@. 2 + sin(av) * av + 1 + log(abs(av))) <: AlternatePaddedVector_test
+    @test typeof(@. 2 + sin(cos(av)) * av + 1 + exp(av) + exp(1)) <: AlternatePaddedVector_test
+    @test !(typeof(av .+ tuple(ones(N)...)) <: AlternatePaddedVector_test)
+    @test !(typeof(tuple(ones(N)...) .+ av) <: AlternateVector_test)
     @test all(@. av ≈ av_c)
     @test all(@. av[1:5] ≈ av_c[1:5])
     @test all(@. av[3:2:9] ≈ av_c[3:2:9])
@@ -272,14 +365,14 @@ end
     @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
     @test all(@. exp(av + sin(1 + av)) + av + av * av ≈ exp(av_c + sin(1 + av_c)) + av_c + av * av_c)
     @test sum(av) ≈ sum(av_c)
-    av_d = AlternatePaddedVector(Dates.Date(1992, 1, 1), Dates.Date(1992, 9, 1), Dates.Date(1922, 1, 1), Dates.Date(1392, 10, 1), N)
+    av_d = PatternVector(N, PaddedEvenOddPattern(Dates.Date(1992, 1, 1), Dates.Date(1992, 9, 1), Dates.Date(1922, 1, 1), Dates.Date(1392, 10, 1)))
     av_d_1 = collect(av_d)
     one_day = Dates.Day(1)
     res_av_with_ref = @. av_d + one_day
     @test all(@. res_av_with_ref == av_d_1 + one_day)
     #mixture
-    av_1 = AlternateVector(-2.0, 3.0, N)
-    @test typeof(av_1 .+ av) <: AlternatePaddedVector
+    av_1 = PatternVector(N, EvenOddPattern(-2.0, 3.0))
+    @test typeof(av_1 .+ av) <: AlternatePaddedVector_test
     #test sparse
     sparse_p = spzeros(Float64, N)
     sparse_p[1] = 4.0
@@ -311,15 +404,14 @@ end
     res_zero_d = @. x_zero_dim_r * av_c
     @test all(@. res_zero_d ≈ res_zero_d_r)
 
-    av_int = AlternatePaddedVector(-2, 3, 2, 4, N)
+    av_int = PatternVector(N, PaddedEvenOddPattern(-2, 3, 2, 4))
     @test all(@. exp(av) + av_int ≈ exp(av_c) + av_int)
     @test all(@. exp(av) + av_int ≈ av_int + exp(av))
 end
 
 @testset "Mixtures" begin
     N = 11
-    av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
-    @test_throws DomainError AlternatePaddedVector(1, 1, 1, 1, 3)
+    av = PatternVector(N, PaddedEvenOddPattern(-2.0, 3.0, 2.0, 4.0))
     @test_throws DomainError av[1:3]
     @test av[1] == -2.0
     @test av[2] == 3.0
@@ -331,26 +423,26 @@ end
     println(av)
     av_c = collect(av)
     #mixture
-    av_1 = AlternateVector(-2.0, 3.0, N)
+    av_1 = PatternVector(N, EvenOddPattern(-2.0, 3.0))
     pattern_zero = PatternVectors.ZeroPattern(0.0)
     vec_zero = PatternVector(N, pattern_zero)
-    @test typeof(av_1 .+ vec_zero) <: AlternateVector
+    @test typeof(av_1 .+ vec_zero) <: AlternateVector_test
     pattern_ones = PatternVectors.FillPattern(1.0)
     vec_one = PatternVector(N, pattern_ones)
     @test typeof(vec_zero .+ vec_one) <: typeof(vec_one)
     @test typeof(vec_one .+ vec_zero) <: typeof(vec_one)
-    @test typeof(av_1 .+ vec_one) <: AlternateVector
-    @test typeof(av_1 .+ vec_zero) <: AlternateVector
-    @test typeof(vec_zero .+ av_1) <: AlternateVector
-    @test typeof(vec_one .+ av) <: AlternatePaddedVector
-    @test typeof(vec_zero .+ av) <: AlternatePaddedVector
-    @test typeof(vec_zero .+ av .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector
-    @test !(typeof(vec_zero .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector)
-    @test !(typeof(vec_zero .+ vec_one .+ vec_zero) <: AlternatePaddedVector)
-    @test !(typeof(av_1 .+ vec_one) <: AlternatePaddedVector)
-    @test !(typeof(av_1 .+ vec_zero) <: AlternatePaddedVector)
+    @test typeof(av_1 .+ vec_one) <: AlternateVector_test
+    @test typeof(av_1 .+ vec_zero) <: AlternateVector_test
+    @test typeof(vec_zero .+ av_1) <: AlternateVector_test
+    @test typeof(vec_one .+ av) <: AlternatePaddedVector_test
+    @test typeof(vec_zero .+ av) <: AlternatePaddedVector_test
+    @test typeof(vec_zero .+ av .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector_test
+    @test !(typeof(vec_zero .+ vec_one .+ vec_zero .+ av_1) <: AlternatePaddedVector_test)
+    @test !(typeof(vec_zero .+ vec_one .+ vec_zero) <: AlternatePaddedVector_test)
+    @test !(typeof(av_1 .+ vec_one) <: AlternatePaddedVector_test)
+    @test !(typeof(av_1 .+ vec_zero) <: AlternatePaddedVector_test)
 
-    @test typeof(av_1 .+ av) <: AlternatePaddedVector
+    @test typeof(av_1 .+ av) <: AlternatePaddedVector_test
     #test sparse
     sparse_p = spzeros(Float64, N)
     sparse_p[1] = 4.0
@@ -385,7 +477,8 @@ end
 
 @testset "SparseArraysExt for EvenOddPattern" begin
     N = 11
-    av = AlternateVector(-2.0, 3.0, N)
+    pattern_iv = EvenOddPattern(-2.0, 3.0)
+    av = PatternVector(N, pattern_iv)
     av_c = collect(av)
     #test sparse
     sparse_p = spzeros(Float64, N)
@@ -396,7 +489,7 @@ end
 
 @testset "SparseArraysExt for PaddedEvenOddPattern" begin
     N = 11
-    av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
+    av = PatternVector(N, PaddedEvenOddPattern(-2.0, 3.0, 2.0, 4.0))
     av_c = collect(av)
     #test sparse
     sparse_p = spzeros(Float64, N)
@@ -408,7 +501,8 @@ end
 @testset "Zygote EvenOddPattern" begin
     function f_av(x)
         N = 11
-        av = AlternateVector(x, -8.2 * x, N)
+        pattern_iv = EvenOddPattern(x, -8.2 * x)
+        av = PatternVector(N, pattern_iv)
         return sum(av)
     end
     function f_std_av(x)
@@ -486,10 +580,33 @@ end
     @test res_av[1] ≈ res_std[1]
 end
 
-@testset "Zygote AlternatePaddedVector" begin
+@testset "Zygote FinalValuePattern" begin
     function f_av(x)
         N = 11
-        av = AlternatePaddedVector(x, -8.2 * x, -5.6 * x, 0.2 * x, N)
+        pattern_zero = ZeroPattern(x)
+        pattern_zero2 = ZeroPattern(0)
+        pattern_iv = FinalValuePattern(x, x)
+        av = PatternVector(N, pattern_iv)
+        av2 = PatternVector(N, pattern_zero)
+        av3 = PatternVector(N, pattern_zero2)
+        return sum(av .+ av2 .+ av3)
+    end
+    function f_std_apv(x)
+        N = 11
+        one_minus_one = ones(N)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    x = 3.2
+    res_av = Zygote.gradient(f_av, x)
+    res_std = Zygote.gradient(f_std_apv, x)
+    @test res_av[1] ≈ res_std[1]
+end
+
+@testset "Zygote PaddedEvenOddPattern" begin
+    function f_av(x)
+        N = 11
+        av = PatternVector(N, PaddedEvenOddPattern(x, -8.2 * x, -5.6 * x, 0.2 * x))
         return sum(av)
     end
     function f_std_apv(x)
@@ -506,13 +623,13 @@ end
     @test res_av[1] ≈ res_std[1]
 end
 
-@testset "Zygote AlternatePaddedVector Deep" begin
+@testset "Zygote PaddedEvenOddPattern Deep" begin
     function scalar_f2(x, y, z, k)
         return sin(x + y) * z * exp(k)
     end
     function f_av2(x)
         N = 11
-        av = AlternatePaddedVector(x, -8.2 * x, -5.6 * x, 0.2 * x, N)
+        av = PatternVector(N, PaddedEvenOddPattern(x, -8.2 * x, -5.6 * x, 0.2 * x))
         x1 = ones(N)
         x2 = @. cos(x1)
         x3 = @. cos(x2)
@@ -537,9 +654,10 @@ end
     @test res_av[1] ≈ res_std[1]
 end
 
-@testset "Composite Broadcasting for AlternateVector" begin
+@testset "Composite Broadcasting for EvenOddPattern" begin
     N = 11
-    av = AlternateVector(-2.0, 4.0, N)
+    pattern_iv = EvenOddPattern(-2.0, 4.0)
+    av = PatternVector(N, pattern_iv)
     global incr = 0
     function scalar_f_av(x)
         global incr += 1
@@ -553,9 +671,10 @@ end
     @test incr == 2
 end
 
-@testset "Composite Broadcasting for AlternatePaddedVector" begin
+@testset "Composite Broadcasting for PaddedEvenOddPattern" begin
     N = 11
-    av = AlternatePaddedVector(-2.0, 3.0, 2.0, 4.0, N)
+    pattern_iv = PaddedEvenOddPattern(-2.0, 3.0, 2.0, 4.0)
+    av = PatternVector(N, pattern_iv)
     global incr = 0
     function scalar_f(x)
         global incr += 1
