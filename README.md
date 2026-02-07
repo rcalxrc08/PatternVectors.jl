@@ -17,6 +17,14 @@ The current patterns allow you to build:
     ```Julia
     [a,b,b,b,b,b...]
     ```
+- final value vectors: convenient representation for arrays of the form:
+    ```Julia
+    [a,a,a,a,a,a...,b]
+    ```
+- padded single value vectors: convenient representation for arrays of the form:
+    ```Julia
+    [x,a,a,a,a,a...,y]
+    ```
 - alternate values vectors: convenient representation for arrays of the form:
     ```Julia
     [a,b,a,b,a,b...]
@@ -45,27 +53,27 @@ Pkg.test("PatternVectors")
 ```julia
 #Import the Package
 using PatternVectors
-pattern_alt=EvenOddPattern(0.2,2.3)
-x=PatternVector(10,pattern_alt)
-y=randn(10)
-pattern_altpad=PaddedEvenOddPattern(0.2,-2.0,4.0,2.3)
-z=PatternVector(10,pattern_altpad)
+pattern_alt = EvenOddPattern(0.2, 2.3)
+x = PatternVector(10, pattern_alt)
+y = randn(10)
+pattern_altpad = PaddedEvenOddPattern(0.2, -2.0, 4.0, 2.3)
+z = PatternVector(10, pattern_altpad)
 @show @. sin(x)
-@show @. sin(x)+exp(z)
-@show @. sin(x)*y
-@show @. sin(x)*y+z
+@show @. sin(x) + exp(z)
+@show @. sin(x) * y
+@show @. sin(x) * y + z
 ```
 
 ## Example of Usage (CUDA)
 ```julia
 #Import the Packages
-using PatternVectors,CUDA
-pattern_alt=EvenOddPattern(0.2,2.3)
-x=PatternVector(10,pattern_alt)
-y=cu(randn(10))
+using PatternVectors, CUDA
+pattern_alt = EvenOddPattern(0.2, 2.3)
+x = PatternVector(10, pattern_alt)
+y = cu(randn(10))
 CUDA.allowscalar(false)
-pattern_altpad=PaddedEvenOddPattern(0.2,-2.0,4.0,2.3)
-z=PatternVector(10,pattern_altpad)
-@show @. sin(x)*y
-@show @. sin(x)*y+z
+pattern_altpad = PaddedEvenOddPattern(0.2, -2.0, 4.0, 2.3)
+z = PatternVector(10, pattern_altpad)
+@show @. sin(x) * y
+@show @. sin(x) * y + z
 ```
