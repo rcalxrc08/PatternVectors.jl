@@ -603,6 +603,29 @@ end
     @test res_av[1] ≈ res_std[1]
 end
 
+@testset "Zygote PaddedFillPattern" begin
+    function f_av(x)
+        N = 11
+        pattern_zero = ZeroPattern(x)
+        pattern_zero2 = ZeroPattern(0)
+        pattern_iv = PaddedFillPattern(x, x, x)
+        av = PatternVector(N, pattern_iv)
+        av2 = PatternVector(N, pattern_zero)
+        av3 = PatternVector(N, pattern_zero2)
+        return sum(av .+ av2 .+ av3)
+    end
+    function f_std_apv(x)
+        N = 11
+        one_minus_one = ones(N)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    x = 3.2
+    res_av = Zygote.gradient(f_av, x)
+    res_std = Zygote.gradient(f_std_apv, x)
+    @test res_av[1] ≈ res_std[1]
+end
+
 @testset "Zygote PaddedEvenOddPattern" begin
     function f_av(x)
         N = 11
