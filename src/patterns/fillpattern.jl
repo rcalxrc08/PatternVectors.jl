@@ -12,10 +12,9 @@ pattern_minimum_size(::FillPattern) = 1 # COV_EXCL_LINE
 function getindex_pattern(x::FillPattern, _::Int, ::Int)
     x.value
 end
-function getindex_pattern_range(x::FillPattern, el::AbstractRange{T}, n::Int) where {T <: Int}
+function getindex_pattern_range(x::FillPattern, el::AbstractRange{T}, ::Int) where {T <: Int}
     new_len = length(el)
-    @views @inbounds bound_final_value = getindex_pattern(x, last(el), n)
-    return new_len, FillPattern(bound_final_value)
+    return new_len, x
 end
 
 function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVector{P}, Nothing, <:F, <:R}) where {F, R, P <: FillPattern}

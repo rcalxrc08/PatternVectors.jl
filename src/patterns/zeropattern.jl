@@ -14,9 +14,9 @@ function getindex_pattern(::ZeroPattern{T}, ::Int, ::Int) where {T}
     zero(T)
 end
 
-function getindex_pattern_range(::ZeroPattern{V}, el::AbstractRange{T}, ::Int) where {T <: Int, V}
+function getindex_pattern_range(x::ZeroPattern{V}, el::AbstractRange{T}, ::Int) where {T <: Int, V}
     new_len = length(el)
-    return new_len, ZeroPattern(zero(V))
+    return new_len, x
 end
 
 # ZeroPattern will generate a FillPattern upon materialization
