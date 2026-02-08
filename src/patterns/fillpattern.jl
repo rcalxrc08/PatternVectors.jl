@@ -26,9 +26,10 @@ function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVec
     return length(first(axes_result)), FillPattern(value)
 end
 
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: FillPattern{N}} where {L, N} = FillPattern{promote_type(L, N)}
+
 # Function to determine the mixed pattern type when combining various patterns
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: FillPattern{M}} where {L, M} = FillPattern{promote_type(L, M)}
-determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: FillPattern{N}} where {L, N} = FillPattern{promote_type(L, N)}
 
 function ChainRulesCore.rrule(::Type{FillPattern}, args...)
     function AbstractPattern_pb(Δapv)

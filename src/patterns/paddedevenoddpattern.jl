@@ -21,7 +21,6 @@ function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: 
     minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
-    new_len = length(el)
     @views @inbounds bound_initial_value = getindex_pattern(x, first_idx, n)
     step_el = step(el)
     next_idx = first_idx + step_el
@@ -45,6 +44,8 @@ function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVec
     return n, PaddedEvenOddPattern(initial_part, even_part, odd_part, end_part)
 end
 
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedEvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
+
 # Function to determine the mixed pattern type when combining various patterns
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
@@ -52,7 +53,11 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{M}, V <: P
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FinalValuePattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedFillPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
-determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedEvenOddPattern{M}, V <: PaddedEvenOddPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
+
+#Mixture generation
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <: FinalValuePattern{N}} where {L, N} = PaddedEvenOddPattern{promote_type(L, N)}
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <: InitialValuePattern{N}} where {L, N} = PaddedEvenOddPattern{promote_type(L, N)}
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedFillPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 
 function ChainRulesCore.rrule(::Type{PaddedEvenOddPattern}, args...)
     function AbstractPattern_pb(Δapv)

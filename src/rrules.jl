@@ -11,7 +11,7 @@ function ChainRulesCore.rrule(::typeof(Base.sum), x::AbstractArray{T, 1}) where 
     function sum_pb(Δapv)
         pattern_fill = FillPattern(one(T))
         fill_vec = PatternVector(length(x), pattern_fill)
-        NoTangent(), fill_vec * Δapv
+        NoTangent(), fill_vec .* Δapv
     end
     return sum(x), sum_pb
 end

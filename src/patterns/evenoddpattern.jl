@@ -20,8 +20,8 @@ function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: 
     minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
-    @views @inbounds odd_value = getindex_pattern(x, first_idx, n)
-    @views @inbounds even_value = getindex_pattern(x, first_idx + step(el), n)
+    odd_value = getindex_pattern(x, first_idx, n)
+    even_value = getindex_pattern(x, first_idx + step(el), n)
     return new_len, EvenOddPattern(odd_value, even_value)
 end
 
@@ -35,10 +35,11 @@ function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVec
     return length(first(axes_result)), EvenOddPattern(odd_part, even_part)
 end
 
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <: EvenOddPattern{N}} where {L, N} = EvenOddPattern{promote_type(L, N)}
+
 # Function to determine the mixed pattern type when combining various patterns
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: EvenOddPattern{N}} where {L, N} = EvenOddPattern{promote_type(L, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: EvenOddPattern{N}} where {L, N} = EvenOddPattern{promote_type(L, N)}
-determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <: EvenOddPattern{N}} where {L, N} = EvenOddPattern{promote_type(L, N)}
 
 function ChainRulesCore.rrule(::Type{EvenOddPattern}, args...)
     function AbstractPattern_pb(Δapv)
