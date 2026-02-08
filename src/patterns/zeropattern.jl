@@ -29,6 +29,8 @@ function materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVec
     return length(first(axes_result)), FillPattern(value)
 end
 
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: ZeroPattern{N}} where {L, N} = ZeroPattern{promote_type(L, N)}
+
 function ChainRulesCore.rrule(::Type{ZeroPattern}, args...)
     function AbstractPattern_pb(_)
         NoTangent(), NoTangent()

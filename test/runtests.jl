@@ -136,6 +136,7 @@ end
     @test all(@. exp(av) + av_c ≈ exp(av_c) + av_c)
     @test all(@. exp(av) + av_c + av * av_c ≈ exp(av_c) + av_c + av * av_c)
     @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
+    @test typeof((PatternVector(N, FillPattern(0.0f0)) .+ av).pattern) <: FillPattern
 end
 @testset "ZeroPattern" begin
     @test_throws "length of PatternVector for pattern" PatternVector(0, ZeroPattern(0))
@@ -172,6 +173,7 @@ end
     @test all(@. exp(av) + av + av * av ≈ exp(av_c) + av_c + av * av_c)
     av2 = PatternVector(N, FillPattern(val))
     @test all(@. exp(av) + av + av2 ≈ exp(av_c) + av_c + av2)
+    @test typeof((PatternVector(N, ZeroPattern(0.0f0)) .+ av).pattern) <: ZeroPattern
 end
 @testset "InitialValuePattern" begin
     @test_throws "length of PatternVector for pattern" PatternVector(0, InitialValuePattern(0, 0))

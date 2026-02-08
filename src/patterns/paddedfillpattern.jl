@@ -49,6 +49,7 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{M}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FinalValuePattern{M}, V <: PaddedFillPattern{N}} where {M, N} = PaddedFillPattern{promote_type(M, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: PaddedFillPattern{M}, V <: PaddedFillPattern{N}} where {M, N} = PaddedFillPattern{promote_type(M, N)}
 
+#Mixture generation
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedFillPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 
 function ChainRulesCore.rrule(::Type{PaddedFillPattern}, args...)
