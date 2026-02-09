@@ -21,12 +21,12 @@ function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: 
     minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
     first_idx = el.start
-    @views @inbounds bound_initial_value = getindex_pattern(x, first_idx, n)
+    bound_initial_value = getindex_pattern(x, first_idx, n)
     step_el = step(el)
     next_idx = first_idx + step_el
-    @views @inbounds even_value = getindex_pattern(x, next_idx, n) #This is a trick, in case n<4 it's breaking the bounds, but it's fine the function is well behaving anyway
-    @views @inbounds odd_value = getindex_pattern(x, next_idx + step_el, n) #This is a trick, in case n<4 it's breaking the bounds, but it's fine the function is well behaving anyway
-    @views @inbounds bound_final_value = getindex_pattern(x, last(el), n)
+    even_value = getindex_pattern(x, next_idx, n) #This is a trick, in case n<4 it's breaking the bounds, but it's fine the function is well behaving anyway
+    odd_value = getindex_pattern(x, next_idx + step_el, n) #This is a trick, in case n<4 it's breaking the bounds, but it's fine the function is well behaving anyway
+    bound_final_value = getindex_pattern(x, last(el), n)
 
     return new_len, PaddedEvenOddPattern(bound_initial_value, even_value, odd_value, bound_final_value)
 end
