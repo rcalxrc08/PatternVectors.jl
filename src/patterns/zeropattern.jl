@@ -31,11 +31,11 @@ end
 
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: ZeroPattern{N}} where {L, N} = ZeroPattern{promote_type(L, N)}
 
-function ChainRulesCore.rrule(::Type{ZeroPattern}, args...)
+function ChainRulesCore.rrule(::Type{ZeroPattern}, value)
     function AbstractPattern_pb(_)
         NoTangent(), NoTangent()
     end
-    return ZeroPattern(args...), AbstractPattern_pb
+    return ZeroPattern(value), AbstractPattern_pb
 end
 
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: ZeroPattern{T}} where {T}

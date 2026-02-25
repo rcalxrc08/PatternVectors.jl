@@ -52,20 +52,20 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FinalValuePattern{M}, 
 #Mixture generation
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{L}, V <: FinalValuePattern{N}} where {L, N} = PaddedFillPattern{promote_type(L, N)}
 
-function ChainRulesCore.rrule(::Type{PaddedFillPattern}, args...)
+function ChainRulesCore.rrule(::Type{PaddedFillPattern}, bound_initial_value, value, bound_final_value)
     function AbstractPattern_pb(Δapv)
-        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(PaddedFillPattern))...
+        NoTangent(), Δapv.bound_initial_value, Δapv.value, Δapv.bound_final_value
     end
-    return PaddedFillPattern(args...), AbstractPattern_pb
+    return PaddedFillPattern(bound_initial_value, value, bound_final_value), AbstractPattern_pb
 end
 
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: PaddedFillPattern{T}} where {T}
-    bd_val_v = PatternVector(n, PaddedFillPattern(one(T), zero(T), zero(T)))
-    der_bound_initial_value = sum(Δapv .* bd_val_v)
-    odd_v = PatternVector(n, PaddedFillPattern(zero(T), one(T), zero(T)))
-    odd_der = sum(odd_v .* Δapv)
-    der_bound_final_value = sum(Δapv) - odd_der - der_bound_initial_value
-    return PaddedFillPattern(der_bound_initial_value, odd_der, der_bound_final_value)
+    bd_iv_v = PatternVector(n, InitialValuePattern(one(T), zero(T)))
+    der_bound_initial_value = sum(Δapv .* bd_iv_v)
+    bv_fv_v = PatternVector(n, FinalValuePattern(zero(T), one(T)))
+    der_bound_final_value = sum(Δapv .* bv_fv_v)
+    val_der = sum(Δapv) - der_bound_initial_value - der_bound_final_value
+    return PaddedFillPattern(der_bound_initial_value, val_der, der_bound_final_value)
 end
 
 #Since we use a sum function in the pullback, we implement it for PaddedFillPattern

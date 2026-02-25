@@ -1,5 +1,5 @@
 module PatternVectors
-
+using ChainRulesCore
 include("patternvector.jl")
 include("broadcast.jl")
 include("rrules.jl")

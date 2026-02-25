@@ -41,11 +41,11 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{L}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: InitialValuePattern{N}} where {L, N} = InitialValuePattern{promote_type(L, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: InitialValuePattern{N}} where {L, N} = InitialValuePattern{promote_type(L, N)}
 
-function ChainRulesCore.rrule(::Type{InitialValuePattern}, args...)
+function ChainRulesCore.rrule(::Type{InitialValuePattern}, first_value, other_value)
     function AbstractPattern_pb(Δapv)
-        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(InitialValuePattern))...
+        NoTangent(), Δapv.first_value, Δapv.other_value
     end
-    return InitialValuePattern(args...), AbstractPattern_pb
+    return InitialValuePattern(first_value, other_value), AbstractPattern_pb
 end
 
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: InitialValuePattern{T}} where {T}

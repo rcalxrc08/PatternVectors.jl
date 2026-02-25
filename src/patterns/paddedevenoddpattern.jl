@@ -59,28 +59,29 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{L}, V <: InitialValuePattern{N}} where {L, N} = PaddedEvenOddPattern{promote_type(L, N)}
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: EvenOddPattern{M}, V <: PaddedFillPattern{N}} where {M, N} = PaddedEvenOddPattern{promote_type(M, N)}
 
-function ChainRulesCore.rrule(::Type{PaddedEvenOddPattern}, args...)
+function ChainRulesCore.rrule(::Type{PaddedEvenOddPattern}, bound_initial_value, value_even, value_odd, bound_final_value)
     function AbstractPattern_pb(Δapv)
-        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(PaddedEvenOddPattern))...
+        NoTangent(), Δapv.bound_initial_value, Δapv.value_even, Δapv.value_odd, Δapv.bound_final_value
     end
-    return PaddedEvenOddPattern(args...), AbstractPattern_pb
+    return PaddedEvenOddPattern(bound_initial_value, value_even, value_odd, bound_final_value), AbstractPattern_pb
 end
 
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: PaddedEvenOddPattern{T}} where {T}
-    bd_val_v = PatternVector(n, PaddedEvenOddPattern(one(T), zero(T), zero(T), zero(T)))
-    der_bound_initial_value = sum(Δapv .* bd_val_v)
+    bd_iv_v = PatternVector(n, InitialValuePattern(one(T), zero(T)))
+    der_bound_initial_value = sum(Δapv .* bd_iv_v)
     odd_v = PatternVector(n, PaddedEvenOddPattern(zero(T), zero(T), one(T), zero(T)))
     odd_der = sum(odd_v .* Δapv)
-    even_v = PatternVector(n, PaddedEvenOddPattern(zero(T), one(T), zero(T), zero(T)))
-    even_der = sum(even_v .* Δapv)
-    der_bound_final_value = sum(Δapv) - even_der - odd_der - der_bound_initial_value
+    bd_fv_v = PatternVector(n, FinalValuePattern(zero(T), one(T)))
+    der_bound_final_value = sum(bd_fv_v .* Δapv)
+    even_der = sum(Δapv) - der_bound_initial_value - der_bound_final_value - odd_der
     return PaddedEvenOddPattern(der_bound_initial_value, even_der, odd_der, der_bound_final_value)
 end
 
 #Since we use a sum function in the pullback, we implement it for PaddedEvenOddPattern
 function Base.sum(x::PatternVector{T, P}) where {T, P <: PaddedEvenOddPattern{T}}
     pattern = x.pattern
-    isfinalodd = isodd(x.n)
-    nhalf = div(x.n, 2) - 1
+    n = x.n
+    isfinalodd = isodd(n)
+    nhalf = div(n, 2) - 1
     return muladd(nhalf, pattern.value_odd, muladd(pattern.value_even, nhalf + isfinalodd, pattern.bound_initial_value + pattern.bound_final_value))
 end

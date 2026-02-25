@@ -31,11 +31,11 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: F
 # Function to determine the mixed pattern type when combining various patterns
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: FillPattern{M}} where {L, M} = FillPattern{promote_type(L, M)}
 
-function ChainRulesCore.rrule(::Type{FillPattern}, args...)
+function ChainRulesCore.rrule(::Type{FillPattern}, value)
     function AbstractPattern_pb(Δapv)
-        NoTangent(), (getfield(Δapv, arg) for arg in fieldnames(FillPattern))...
+        NoTangent(), Δapv.value
     end
-    return FillPattern(args...), AbstractPattern_pb
+    return FillPattern(value), AbstractPattern_pb
 end
 
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: FillPattern{T}} where {T}
