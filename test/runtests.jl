@@ -712,3 +712,47 @@ end
     res = @. scalar_f(av) * av_c
     @test incr == 4
 end
+
+@testset "Zygote PaddedEvenOddPattern Broken Example" begin
+    function my_mul(x, y)
+        return x .* y
+    end
+
+    function f_av(a, b, c, d)
+        N = 100_000
+        x = ones(N)
+        av = PatternVector(N, PaddedEvenOddPattern(a, b, c, d))
+        return sum(my_mul(av, x))
+    end
+
+    function generate_i(i, N, a, b, c, d)
+        ifelse(i == 1, a, ifelse(i == N, d, ifelse(iseven(i), b, c)))
+    end
+
+    function f_std(a, b, c, d)
+        N = 100_000
+        x = ones(N)
+        one_minus_one = @. generate_i(1:N, N, a, b, c, d)
+        av = one_minus_one .* x
+        return sum(av)
+    end
+    a = 0.2
+    b = 2.0
+    c = -8.2
+    d = 0.5
+    @show res_av = Zygote.gradient(f_av, a, b, c, d)
+    @show res_std = Zygote.gradient(f_std, a, b, c, d)
+    res_an = (1.0, 49999.0, 49999.0, 1.0)
+    # @test res_av ≈ (1.0, 49999.0, 49999.0, 1.0)
+    @test all(res_av .≈ res_an)
+    dx = 1e-4
+    df_da = (f_std(a + dx, b, c, d) - f_std(a - dx, b, c, d)) / (2 * dx)
+    df_db = (f_std(a, b + dx, c, d) - f_std(a, b - dx, c, d)) / (2 * dx)
+    df_dc = (f_std(a, b, c + dx, d) - f_std(a, b, c - dx, d)) / (2 * dx)
+    df_dd = (f_std(a, b, c, d + dx) - f_std(a, b, c, d - dx)) / (2 * dx)
+    @test sum(abs.(res_av .- (df_da, df_db, df_dc, df_dd))) < 1e-2
+    @test_broken res_std[1] ≈ res_an[1]
+    @test_broken res_std[2] ≈ res_an[2]
+    @test_broken res_std[3] ≈ res_an[3]
+    @test_broken res_std[4] ≈ res_an[4]
+end
