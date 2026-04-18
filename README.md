@@ -1,4 +1,4 @@
-# PatternVectors.jl
+# PatternVectors.jl <img src="etc/logo.png" width="40">  
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://rcalxrc08.github.io/PatternVectors.jl/)
 [![CI](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/rcalxrc08/PatternVectors.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/rcalxrc08/PatternVectors.jl/graph/badge.svg?token=GqpkxPrlXg)](https://codecov.io/gh/rcalxrc08/PatternVectors.jl)
