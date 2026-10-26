@@ -41,3 +41,8 @@ end
 function pattern_to_vector_pullback(::Type{P}, Δapv, n) where {P <: ZeroPattern{T}} where {T}
     return ZeroPattern(zero(T))
 end
+
+#Since we use a sum function in the pullback, we implement it for ZeroPattern
+function Base.sum(x::PatternVector{T, P}) where {T, P <: ZeroPattern{T}}
+    return zero(T)
+end

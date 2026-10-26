@@ -39,3 +39,11 @@ function Base.getindex(x::PatternVector{V, P}, el::AbstractRange{T}) where {T <:
     n, pattern = getindex_pattern_range(x.pattern, el, x.n)
     return PatternVector(n, pattern)
 end
+
+# Keyword calls such as `sum(x; dims = :)` (used by Zygote's broadcast pullback) dispatch only among
+# methods accepting keywords, so they would skip the pattern-specialized `sum` methods and iterate
+# over all n elements. Forward them to the positional `sum`, leaving positional dispatch untouched.
+function Core.kwcall(kws::NamedTuple, ::typeof(sum), x::PatternVector)
+    kws === (dims = :,) && return sum(x)
+    return invoke(Core.kwcall, Tuple{NamedTuple, typeof(sum), AbstractArray}, kws, sum, x)
+end
