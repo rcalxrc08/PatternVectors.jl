@@ -90,7 +90,51 @@ end
         ((a, b, c, d, s, x, X) -> sum(X[1:1, :] .* pv(size(X, 1), a, b, c, d)), (a, b, c, d, s, x, X) -> sum(X[1:1, :] .* dv(size(X, 1), a, b, c, d))),
     )
     args = (0.3, -1.2, 0.7, 2.1, 0.4, rand(9), rand(9, 4))
-    for (f_pv, f_ref) in cases
-        @test all(mooncake_gradient(f_pv, args...) .≈ mooncake_gradient(f_ref, args...))
+    strategy = Base.get_extension(PatternVectors, :MooncakeExt).PARTIALS_STRATEGY
+    default_strategy = strategy[]
+    for partials_strategy in (:store, :recompute)
+        strategy[] = partials_strategy
+        for (f_pv, f_ref) in cases
+            @test all(mooncake_gradient(f_pv, args...) .≈ mooncake_gradient(f_ref, args...))
+        end
+    end
+    strategy[] = default_strategy
+end
+
+# The broadcast-based reverse pass serves non-Array arrays (e.g. CuArray). A broadcast style other than
+# DefaultArrayStyle over plain Arrays selects it on CPU: compare it with the fused loop through rrule!! itself.
+struct GenericArrayStyle{N} <: Base.Broadcast.AbstractArrayStyle{N} end
+Base.similar(bc::Base.Broadcast.Broadcasted{GenericArrayStyle{N}}, ::Type{T}) where {N, T} = similar(Array{T}, axes(bc))
+
+@testset "Mooncake broadcast-based reverse pass" begin
+    numbers(r::Mooncake.RData) = numbers(r.data)
+    numbers(r::Union{Tuple, NamedTuple}) = reduce(vcat, map(numbers, collect(r)); init = Float64[])
+    numbers(r::Number) = [r]
+    numbers(::Mooncake.NoRData) = Float64[]
+    function run_rule(style, f, xs...)
+        args = map(Mooncake.zero_fcodual, xs)
+        y, pb = Mooncake.rrule!!(Mooncake.zero_fcodual(PatternVectors.materialize_mixture), Mooncake.zero_fcodual(style), Mooncake.zero_fcodual(f), args...)
+        dy = Mooncake.tangent(y)
+        dy .= reshape(range(0.5, 1.5; length = length(dy)), size(dy))
+        return copy(Mooncake.primal(y)), numbers(pb(Mooncake.NoRData())), map(Mooncake.tangent, args)
+    end
+    n = 9
+    pv = PatternVector(n, PaddedEvenOddPattern(0.3, -1.2, 0.7, 2.1))
+    cases = (
+        (*, (pv, rand(n))),
+        ((u, v, w) -> sin(u) * v + w, (pv, rand(n), 0.4)),
+        (*, (rand(n, 3), pv)),
+        (*, (rand(1, 3), pv)),
+        (Base.literal_pow, (Ref(^), pv, Ref(Val(2)))),
+    )
+    for (f, xs) in cases
+        N = maximum(x -> x isa AbstractArray ? ndims(x) : 0, xs)
+        y_broadcast, r_broadcast, d_broadcast = run_rule(GenericArrayStyle{N}(), f, xs...)
+        y_fused, r_fused, d_fused = run_rule(Base.Broadcast.DefaultArrayStyle{N}(), f, xs...)
+        @test y_broadcast ≈ y_fused
+        @test r_broadcast ≈ r_fused
+        for (a, b) in zip(d_broadcast, d_fused)
+            a isa Array && @test a ≈ b
+        end
     end
 end

@@ -87,9 +87,12 @@ struct PatternMixtureArrayStyle{N,T} <: AbstractPatternMixtureArrayStyle{N}
     end
 end
 
+# Innermost wrapped style: mixing with some styles (e.g. CuArrayStyle) can nest PatternMixtureArrayStyle.
 function get_style(::PatternMixtureArrayStyle{N,T}) where {T,N}
-    return T()
+    return unwrap_mixture_style(T())
 end
+unwrap_mixture_style(style::PatternMixtureArrayStyle) = get_style(style)
+unwrap_mixture_style(style) = style
 
 # BroadcastStyle rules for PatternMixtureArrayStyle
 

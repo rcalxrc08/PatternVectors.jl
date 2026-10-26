@@ -18,9 +18,29 @@ Status as of 2026-10-26, branch `support-mooncake`. Notes to resume the work in 
     `Array{<:IEEEFloat}`, IEEEFloat scalars, `PatternVector`s with all pattern fields of eltype T, or
     non-differentiable constants (incl. `Ref`s of them, e.g. `literal_pow`); one common float type;
     at most `MAX_DIRECTIONS = 16` directions; `f` must infer to `T` on primals and `NDual{T,K}` on duals.
-  - Forward: plain broadcast only. Reverse: one fused loop re-evaluating `f` on `Mooncake.Nfwd.NDual`
-    (one direction per dense/scalar arg, one per pattern field); dense cotangents accumulated in place
-    (`newindex` handles broadcast dims), pattern/scalar cotangents in registers.
+  - `f` is evaluated on `Mooncake.Nfwd.NDual` with ONE direction per differentiable argument (PatternVectors
+    are seeded elementwise like dense arrays), so the dual width does not grow with the pattern size.
+    The elementwise cotangent of a PatternVector is mapped onto the pattern fields with the pattern Jacobian
+    (`getindex_pattern` on `seeded_pattern`, a pattern with NDual fields): cheap, no evaluation of `f`.
+  - `PARTIALS_STRATEGY` (a `Ref` in the extension): `:store` (default) evaluates `f` once on NDuals in the
+    forward pass and keeps K partials per element; `:recompute` runs the primal forward and re-evaluates `f`
+    on NDuals in the pullback (no extra memory). Switch with
+    `Base.get_extension(PatternVectors, :MooncakeExt).PARTIALS_STRATEGY[] = :recompute`.
+  - Reverse pass: one fused loop; dense cotangents accumulated in place (`newindex` handles broadcast dims),
+    scalar and pattern cotangents in registers. Helpers called inside `@inbounds` loops must be
+    `@propagate_inbounds` (a missing one doubled the loop time).
+  - GPU / non-Array arrays (e.g. CuArray): MooncakeCUDAExt's own broadcast rule rejects PatternVector args,
+    so our rule must handle them. `uses_fused_loop` is false unless the style is `DefaultArrayStyle` and all
+    dense args are `Array`; then the forward pass materializes the NDual broadcast (`:store`) and
+    `broadcast_pullback` uses whole-array broadcasts/reductions, mapping PatternVector cotangents with the
+    package's `pattern_to_vector_pullback` (GPU friendly). Tested on CPU with a custom broadcast style.
+  - The plan (`mixture_plan`, needing `tangent_type`) is computed by the callers, which are `@assume_effects
+    :foldable`, and passed to the `@generated` functions as `Val((roles, directions, K))`: generators run in
+    their definition world and would not see `tangent_type(::CuArray)` from MooncakeCUDAExt (loaded later).
+- `src/broadcast.jl`: `get_style` unwraps nested `PatternMixtureArrayStyle` (they appear when mixing with
+  CuArrayStyle), so `materialize_mixture` always gets the innermost style.
+- `test/cuda_tests.jl` (needs a GPU, not run by `runtests.jl`): Zygote and Mooncake on CuArrays. Run it in an
+  environment with PatternVectors (dev), CUDA, Zygote, ChainRulesCore, BenchmarkTools, Mooncake, Statistics.
 - `src/patternvector.jl`: `Core.kwcall` method forwarding `sum(x; dims = :)` to the positional,
   pattern-specialized `sum` (Zygote's `unbroadcast` calls the keyword form, which was O(n)).
   `ZeroPattern` got its O(1) `sum`.
@@ -32,22 +52,25 @@ Status as of 2026-10-26, branch `support-mooncake`. Notes to resume the work in 
 
 ## Benchmark summary (gradient time, Mooncake with prebuilt rule)
 
-| case | n | Zygote | Mooncake |
-|---|---|---|---|
-| PV only, pattern chain | any n | ~12 µs (after the kwcall fix) | ~60 µs |
-| `sum(pv .* x)` | 10^5 | 1.95 ms | 1.04 ms |
-| `sum(h.(pv, x))`, `h(u,v) = sin(u)*exp(v) + u^2` | 10^5 | 7.6 ms | 11.2 ms |
-| dense `sum(v .* x)` | 10^5 | 3.9 ms | 21 ms |
+The laptop timings vary by up to ~30% between processes: compare variants in the same process.
 
-Mooncake allocates ~3x less than Zygote whenever arrays are involved.
+| case | n | Zygote | Mooncake `:recompute` | Mooncake `:store` |
+|---|---|---|---|---|
+| PV only, pattern chain | any n | ~12 µs (after the kwcall fix) | ~60 µs | ~60 µs |
+| `sum(pv .* x)` | 10^6 | 14.9 ms | 13.5 ms | 15.5 ms |
+| `sum(h.(pv, x))`, `h(u,v) = sin(u)*exp(v) + u^2` | 10^6 | 57 ms | 63 ms | 45 ms |
+| `sum(hh.(pv, x))`, heavier `hh` | 10^6 | 132 ms | 223 ms | 116 ms |
+| 5 arguments, cheap | 10^6 | 103 ms | 56 ms | 60 ms |
+| 5 arguments, heavy | 10^6 | 153 ms | 202 ms | 153 ms |
+| dense `sum(v .* x)` (no PatternVector) | 10^5 | 3.9 ms | 21 ms | 21 ms |
 
-## TODO — expensive broadcast functions (next step)
+Mooncake allocates less than Zygote whenever arrays are involved (`:store` adds K * n floats).
 
-For expensive `f` (e.g. `h` above) the Mooncake rule is ~1.3x slower than Zygote: Zygote stores the
-partials in the forward pass, our rule re-evaluates `f` with NDuals in the reverse pass (primal + dual pass).
-Idea: optionally store the partials in the forward pass (`(K + 1) * n` extra floats), e.g. keep the
-`Array{NDual{T,K}}` from a dual forward broadcast and extract the primal from it, choosing between the
-two strategies by a heuristic or a user switch. Measure with `test/bench_zygote_mooncake.jl`.
+## Done: expensive broadcast functions
+
+Was ~1.3x slower than Zygote. Fixed by (1) one dual direction per argument instead of per pattern field
+(the main win: `h` went from ~14 ms to ~5 ms at n = 10^5) and (2) the `:store` strategy.
+Possible follow-up: choose the strategy automatically (no static estimate of the cost of `f` is available).
 
 ## Other open points
 

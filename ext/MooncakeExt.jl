@@ -1,9 +1,9 @@
 module MooncakeExt
 
 using PatternVectors, Mooncake
-using PatternVectors: materialize_mixture
+using PatternVectors: materialize_mixture, getindex_pattern
 using Mooncake: CoDual, NoRData, NoTangent, Tangent, DefaultCtx, ReverseMode, primal, tangent, tangent_type, zero_rdata
-using Mooncake.Nfwd: NDual
+using Mooncake.Nfwd: NDual, ndual_value
 using Base: IEEEFloat
 using Base.Broadcast: Broadcasted, DefaultArrayStyle, instantiate, preprocess, newindex
 
@@ -14,25 +14,25 @@ using Base.Broadcast: Broadcasted, DefaultArrayStyle, instantiate, preprocess, n
 # array-like cotangent, which would force Mooncake to materialize the PatternVector cotangent.
 
 # Fast reverse rule for mixed broadcasts (PatternVectors with dense arrays), e.g. `pv .* x`.
-# Forward pass: plain broadcast, nothing is stored apart from the output.
-# Reverse pass: a single fused loop re-evaluating `f` on NDuals with one direction per dense/scalar
-# argument and one per pattern field; dense cotangents are accumulated in place, pattern and scalar
-# cotangents in registers. Unsupported signatures fall back to the rule derived by Mooncake.
+# `f` is evaluated on NDuals with one direction per differentiable argument (dense, scalar or PatternVector,
+# each seeded elementwise), either again in the pullback or once in the forward pass (PARTIALS_STRATEGY).
+# The reverse pass is a single fused loop: dense cotangents are accumulated in place, scalar cotangents in
+# registers, and the elementwise cotangent of a PatternVector is mapped onto its pattern fields through the
+# pattern Jacobian, obtained from `getindex_pattern` on a pattern with NDual fields (no evaluation of `f`).
+# Unsupported signatures fall back to the rule derived by Mooncake.
 
 const MAX_DIRECTIONS = 16
 
-struct ArgPlan
-    role::Symbol # :const, :dense, :scalar or :pattern
-    offset::Int  # directions of this argument are offset+1:offset+ndirs
-    ndirs::Int
-end
-
 pattern_type(::Type{<:PatternVector{T, P}}) where {T, P} = P
 
-function arg_role(::Type{A}) where {A}
+# The plan depends on `tangent_type`, whose methods may come from extensions loaded later (e.g. CuArray in
+# MooncakeCUDAExt). @generated bodies run in the world of their definition and would miss them, so the plan is
+# computed by the callers (foldable: constant at compile time) and passed to the generated functions as Val.
+Base.@assume_effects :foldable function arg_role(::Type{A}) where {A}
     tangent_type(A) == NoTangent && return :const
     (A <: Base.RefValue && tangent_type(eltype(A)) == NoTangent) && return :const
-    A <: Array{<:IEEEFloat} && return :dense
+    # dense arrays whose fdata is an array of the same type, e.g. Array or CuArray (via MooncakeCUDAExt)
+    (A <: AbstractArray{<:IEEEFloat} && tangent_type(A) == A) && return :dense
     A <: IEEEFloat && return :scalar
     (A <: PatternVector{<:IEEEFloat} && all(==(eltype(A)), fieldtypes(pattern_type(A)))) && return :pattern
     return :unsupported
@@ -41,34 +41,36 @@ end
 # Element seen by the broadcast function for a non-differentiable argument
 const_eltype(::Type{A}) where {A} = (A <: AbstractArray || A <: Base.RefValue) ? eltype(A) : A <: Number ? A : nothing
 
-function mixture_plan(::Type{Xs}) where {Xs <: Tuple}
-    plans = ArgPlan[]
+# roles[i] in (:const, :dense, :scalar, :pattern); directions[i] is the NDual direction of argument i (0 if :const)
+Base.@assume_effects :foldable function mixture_plan(::Type{Xs}) where {Xs <: Tuple}
+    roles = Symbol[]
+    directions = Int[]
     Ts = DataType[]
     K = 0
     for A in fieldtypes(Xs)
         role = arg_role(A)
         role === :unsupported && return nothing
         role === :const && const_eltype(A) === nothing && return nothing
-        ndirs = role === :const ? 0 : role === :pattern ? fieldcount(pattern_type(A)) : 1
         role === :const || push!(Ts, eltype(A))
-        push!(plans, ArgPlan(role, K, ndirs))
-        K += ndirs
+        K += role !== :const
+        push!(roles, role)
+        push!(directions, role === :const ? 0 : K)
     end
     (K == 0 || K > MAX_DIRECTIONS || !allequal(Ts)) && return nothing
-    return (plans = Tuple(plans), K = K, T = first(Ts))
+    return (roles = Tuple(roles), directions = Tuple(directions), K = K, T = first(Ts))
 end
 
 function supports_fast_path(::Type{Sig}) where {Sig <: Tuple}
     isconcretetype(Sig) || return false
     S, F = fieldtype(Sig, 2), fieldtype(Sig, 3)
-    S <: DefaultArrayStyle || return false
+    S <: Broadcast.AbstractArrayStyle || return false
     (Base.issingletontype(F) && tangent_type(F) == NoTangent) || return false
     Xs = Tuple{fieldtypes(Sig)[4:end]...}
     plan = mixture_plan(Xs)
     plan === nothing && return false
     T, K = plan.T, plan.K
-    primal_elts = Tuple{(p.role === :const ? const_eltype(A) : T for (p, A) in zip(plan.plans, fieldtypes(Xs)))...}
-    dual_elts = Tuple{(p.role === :const ? const_eltype(A) : NDual{T, K} for (p, A) in zip(plan.plans, fieldtypes(Xs)))...}
+    primal_elts = Tuple{(role === :const ? const_eltype(A) : T for (role, A) in zip(plan.roles, fieldtypes(Xs)))...}
+    dual_elts = Tuple{(role === :const ? const_eltype(A) : NDual{T, K} for (role, A) in zip(plan.roles, fieldtypes(Xs)))...}
     return Core.Compiler.return_type(F.instance, primal_elts) === T &&
         Core.Compiler.return_type(F.instance, dual_elts) === NDual{T, K}
 end
@@ -77,12 +79,40 @@ function Mooncake._is_primitive(::Type{DefaultCtx}, ::Type{<:ReverseMode}, ::Typ
     return supports_fast_path(Sig)
 end
 
+# Strategy for the partials used by the reverse pass:
+# :store (default) evaluates f once on NDuals in the forward pass and keeps the K partials per element
+#   (K * n extra floats); fastest unless f is very cheap.
+# :recompute evaluates f on primals in the forward pass and again on NDuals in the pullback
+#   (no memory besides the output); fastest for very cheap f, e.g. `pv .* x`.
+const PARTIALS_STRATEGY = Ref(:store)
+
+# The fused reverse loop indexes elements one by one: only for CPU Arrays. Other array types (e.g. CuArray)
+# use the broadcast-based reverse pass, built from whole-array broadcasts and reductions.
+Base.@assume_effects :foldable uses_fused_loop(::Type{S}, ::Type{Xs}) where {S, Xs} = S <: DefaultArrayStyle &&
+    all(A -> arg_role(A) !== :dense || A <: Array, fieldtypes(Xs))
+
 function Mooncake.rrule!!(::CoDual{typeof(materialize_mixture)}, style::CoDual, f::CoDual, args::Vararg{CoDual, M}) where {M}
     s, fn, xs = primal(style), primal(f), map(primal, args)
-    y = materialize_mixture(s, fn, xs...)
+    full_plan = mixture_plan(typeof(xs))
+    plan = Val((full_plan.roles, full_plan.directions, full_plan.K)) # isbits/Symbol tuples: a valid type parameter
+    bc = seeded_broadcast(plan, s, fn, xs)
+    if !uses_fused_loop(typeof(s), typeof(xs))
+        yd = Base.materialize(bc) # f is evaluated once on NDuals, partials are kept (:store)
+        y = map(ndual_value, yd)
+        dy_gpu = zero(y)
+        materialize_mixture_broadcast_pb(::NoRData) = (NoRData(), NoRData(), NoRData(), broadcast_pullback(plan, dy_gpu, yd, xs, map(tangent, args))...)
+        return CoDual(y, dy_gpu), materialize_mixture_broadcast_pb
+    end
+    if PARTIALS_STRATEGY[] === :store
+        y, partials = store_dual_broadcast(bc, dual_eltype(plan, xs))
+    else
+        y = materialize_mixture(s, fn, xs...)
+        partials = nothing
+    end
     dy = zero(y)
     function materialize_mixture_pb(::NoRData)
-        return (NoRData(), NoRData(), NoRData(), mixture_pullback(dy, fn, xs, map(tangent, args))...)
+        src = partials === nothing ? preprocess(dy, bc) : partials
+        return (NoRData(), NoRData(), NoRData(), mixture_pullback(plan, dy, src, xs, map(tangent, args))...)
     end
     return CoDual(y, dy), materialize_mixture_pb
 end
@@ -102,51 +132,117 @@ struct SeededFunction{F, W}
 end
 (s::SeededFunction)(vals...) = s.f(map((w, v) -> w(v), s.wraps, vals)...)
 
-@generated function mixture_pullback(dy::AbstractArray{T, N}, f, xs::Xs, dxs) where {T, N, Xs}
-    plan = mixture_plan(Xs)
-    K = plan.K
-    D = :(NDual{$T, $K})
-    seeded_args = Any[]  # PatternVectors are seeded once, through their pattern fields
-    wraps = Any[]        # dense and scalar elements are seeded inside the broadcast function
-    dense_updates = Any[]
+# Common float type of the differentiable arguments (used inside generators, no tangent_type needed)
+plan_eltype(roles, ::Type{Xs}) where {Xs} = eltype(fieldtype(Xs, findfirst(!=(:const), roles)))
+
+@generated dual_eltype(::Val{plan}, xs::Xs) where {plan, Xs} = :(NDual{$(plan_eltype(plan[1], Xs)), $(plan[3])})
+
+# Lazy broadcast of f over the arguments seeded with NDuals: element I holds y[I] and its K partials
+@generated function seeded_broadcast(::Val{plan}, style, f, xs::Xs) where {plan, Xs}
+    roles, directions, K = plan
+    T = plan_eltype(roles, Xs)
+    wraps = [role === :const ? :identity : :(Seed{$T, $K, $k}()) for (role, k) in zip(roles, directions)]
+    return :(instantiate(Broadcasted(style, SeededFunction(f, ($(wraps...),)), xs)))
+end
+
+# Forward pass of the :store strategy: primal output and partials from a single dual evaluation
+function store_dual_broadcast(bc::Broadcasted, ::Type{NDual{T, K}}) where {T, K}
+    y = Array{T}(undef, map(length, axes(bc)))
+    partials = Array{NTuple{K, T}}(undef, size(y))
+    bcp = preprocess(y, bc)
+    @inbounds for I in CartesianIndices(y)
+        d = bcp[I]
+        y[I] = d.value
+        partials[I] = d.partials
+    end
+    return y, partials
+end
+
+Base.@propagate_inbounds partials_at(bc::Broadcasted, I) = bc[I].partials
+Base.@propagate_inbounds partials_at(partials::Array, I) = partials[I]
+
+# Pattern with NDual fields: getindex_pattern on it gives the derivatives of an element w.r.t. the pattern fields
+@generated function seeded_pattern(pattern::P) where {P}
+    T, F = fieldtype(P, 1), fieldcount(P)
+    fields = [:(NDual{$T, $F}(getfield(pattern, $j), onehot($T, Val($F), $j))) for j in 1:F]
+    return :($(Base.typename(P).wrapper)($(fields...)))
+end
+
+@generated function mixture_pullback(::Val{plan}, dy::AbstractArray{T}, src, xs::Xs, dxs) where {plan, T, Xs}
+    roles, directions, K = plan
+    setup = Any[]
+    updates = Any[]
     results = Any[]
-    for (i, p) in enumerate(plan.plans)
-        o = p.offset
-        if p.role === :pattern
+    for (i, (role, k)) in enumerate(zip(roles, directions))
+        idx = :(newindex(I, extruded[$i].keeps, extruded[$i].defaults))
+        if role === :pattern
             P = pattern_type(fieldtype(Xs, i))
-            fields = [:($D(getfield(xs[$i].pattern, $j), onehot($T, Val($K), $(o + j)))) for j in 1:p.ndirs]
-            push!(seeded_args, :(PatternVector(xs[$i].n, $(Base.typename(P).wrapper)($(fields...)))))
-            push!(wraps, :identity)
-            nt = :(NamedTuple{$(fieldnames(P))}(($([:(acc[$(o + j)]) for j in 1:p.ndirs]...),)))
+            F = fieldcount(P)
+            jac, pacc = Symbol(:jac, i), Symbol(:pacc, i)
+            push!(setup, :($jac = seeded_pattern(xs[$i].pattern)), :($pacc = zero_acc($T, Val($F))))
+            push!(updates, :($pacc = accumulate_partials($pacc, Δ * partials[$k], getindex_pattern($jac, $idx[1], xs[$i].n).partials)))
+            nt = :(NamedTuple{$(fieldnames(P))}($pacc))
             push!(results, :(Mooncake.rdata(Tangent((n = NoTangent(), pattern = Tangent($nt))))))
-        elseif p.role === :const
-            push!(seeded_args, :(xs[$i]))
-            push!(wraps, :identity)
+        elseif role === :const
             push!(results, :(zero_rdata(xs[$i])))
+        elseif role === :dense
+            push!(updates, :(dxs[$i][$idx] += Δ * partials[$k]))
+            push!(results, :(NoRData()))
         else
-            push!(seeded_args, :(xs[$i]))
-            push!(wraps, :(Seed{$T, $K, $(o + 1)}()))
-            if p.role === :dense
-                push!(dense_updates, :(dxs[$i][newindex(I, extruded[$i].keeps, extruded[$i].defaults)] += Δ * partials[$(o + 1)]))
-                push!(results, :(NoRData()))
-            else
-                push!(results, :(acc[$(o + 1)]))
-            end
+            push!(results, :(acc[$k]))
         end
     end
     return quote
-        g = SeededFunction(f, ($(wraps...),))
-        bc = preprocess(dy, instantiate(Broadcasted(DefaultArrayStyle{$N}(), g, ($(seeded_args...),))))
         extruded = map(Base.Broadcast.extrude, xs)
         acc = zero_acc($T, Val($K))
+        $(setup...)
         @inbounds for I in CartesianIndices(dy)
             Δ = dy[I]
-            partials = bc[I].partials
+            partials = partials_at(src, I)
             acc = accumulate_partials(acc, Δ, partials)
-            $(dense_updates...)
+            $(updates...)
         end
         return ($(results...),)
     end
+end
+
+# Broadcast-based reverse pass (any array type supporting broadcast and reductions, e.g. CuArray).
+# Cotangent of argument k, elementwise: dy .* ∂y/∂x_k, read from the stored NDuals.
+struct PartialTimes{k} end
+(::PartialTimes{k})(Δ, d) where {k} = Δ * d.partials[k]
+
+# Sum Δ over the dimensions broadcast to reach its shape from an argument of size sz
+function reduce_to(Δ::AbstractArray, sz::Tuple)
+    dims = Tuple(d for d in 1:ndims(Δ) if d > length(sz) || (sz[d] == 1 && size(Δ, d) != 1))
+    return isempty(dims) ? Δ : reshape(sum(Δ; dims = dims), sz)
+end
+
+pattern_rdata(dp::P) where {P} = Mooncake.rdata(Tangent((n = NoTangent(), pattern = Tangent(NamedTuple{fieldnames(P)}(ntuple(j -> getfield(dp, j), fieldcount(P)))))))
+
+@generated function broadcast_pullback(::Val{plan}, dy, yd, xs::Xs, dxs) where {plan, Xs}
+    roles, directions = plan
+    results = Any[]
+    for (i, (role, k)) in enumerate(zip(roles, directions))
+        Δk = :(Broadcast.broadcasted(PartialTimes{$k}(), dy, yd))
+        if role === :const
+            push!(results, :(zero_rdata(xs[$i])))
+        elseif role === :scalar
+            push!(results, :(sum(Base.materialize($Δk))))
+        elseif role === :dense
+            push!(results, quote
+                if size(dxs[$i]) == size(dy)
+                    dxs[$i] .+= $Δk
+                else
+                    dxs[$i] .+= reduce_to(Base.materialize($Δk), size(dxs[$i]))
+                end
+                NoRData()
+            end)
+        else
+            P = pattern_type(fieldtype(Xs, i))
+            push!(results, :(pattern_rdata(PatternVectors.pattern_to_vector_pullback($P, reduce_to(Base.materialize($Δk), size(xs[$i])), xs[$i].n))))
+        end
+    end
+    return :(($(results...),))
 end
 
 end
