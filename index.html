@@ -89,15 +89,23 @@ padding-right:  10px;
         </li>
         
         <li class="nav-item">
-          <a class="nav-link" href="#performances">Performances</a>
-        </li>
-        
-        <li class="nav-item">
           <a class="nav-link" href="#gpu">GPU</a>
         </li>
         
         <li class="nav-item">
+          <a class="nav-link" href="#ad">AD</a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="#performances">Performances</a>
+        </li>
+        
+        <li class="nav-item">
           <a class="nav-link" href="#new_patterns">New Patterns</a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="#similar">Similar</a>
         </li>
         
       </ul>
@@ -126,43 +134,30 @@ padding-right:  10px;
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>About this Package</h2> <div class="lead">PatternVectors.jl is a Julia package containing some useful array representation for peculiar one dimensional arrays patterns.</div> It currently contains the following pattern types:</p>
+        <h2>About this Package</h2> <div class="lead">PatternVectors.jl provides PatternVector, an immutable AbstractVector that stores a vector with a known structure instead of storing every element.</div></p>
+<p>Numerical code is full of long vectors holding only a few distinct values: quadrature weights &#40;<code>&#91;1, 4, 2, 4, 2, …, 4, 1&#93; / 3</code> for Simpson&#39;s rule&#41;, alternating signs, boundary values on a grid, a payoff that differs only at maturity. The usual options both have a cost:</p>
 <ul>
-<li><p>ZeroPattern: convenient representation for vectors of the form:</p>
+<li><p><strong>materializing a dense vector</strong> uses O&#40;n&#41; memory, and every broadcast over it evaluates the function n times;</p>
+</li>
+<li><p><strong>writing an index loop</strong> &#40;<code>ifelse&#40;isodd&#40;i&#41;, …&#41;</code>&#41; is fast on the CPU, but it does not run on GPUs without a kernel, and it is awkward for automatic differentiation.</p>
 </li>
 </ul>
-<pre><code class="julia hljs">[<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0.</span>..]</code></pre>
+<p>A PatternVector keeps the vectorized style and removes the cost:</p>
 <ul>
-<li><p>FillPattern: convenient representation for vectors of the form:</p>
+<li><p>it stores only its length and the pattern values, so it is a small <code>isbits</code> object that can be sent to a GPU kernel as is;</p>
+</li>
+<li><p>a broadcast over PatternVectors evaluates the function once per distinct value and returns a PatternVector;</p>
+</li>
+<li><p>a broadcast mixing PatternVectors and other arrays &#40;<code>Array</code>, <code>CuArray</code>, …&#41; returns an array of the other type, computed in a single fused pass;</p>
+</li>
+<li><p><code>sum</code> and indexing with ranges are O&#40;1&#41; and return the expected types;</p>
+</li>
+<li><p>it is differentiable with Zygote, Mooncake and Enzyme.</p>
 </li>
 </ul>
-<pre><code class="julia hljs">[a,a,a,a,a,a...]</code></pre>
-<ul>
-<li><p>InitialValuePattern: convenient representation for vectors of the form:</p>
-</li>
-</ul>
-<pre><code class="julia hljs">[a,b,b,b,b,b...]</code></pre>
-<ul>
-<li><p>FinalValuePattern: convenient representation for vectors of the form:</p>
-</li>
-</ul>
-<pre><code class="julia hljs">[a,a,a,a,a,a...,b]</code></pre>
-<ul>
-<li><p>PaddedFillPattern: convenient representation for vectors of the form:</p>
-</li>
-</ul>
-<pre><code class="julia hljs">[x,a,a,a,a,a...,y]</code></pre>
-<ul>
-<li><p>EvenOddPattern: convenient representation for vectors of the form:</p>
-</li>
-</ul>
-<pre><code class="julia hljs">[a,b,a,b,a,b...]</code></pre>
-<ul>
-<li><p>PaddedEvenOddPattern: convenient representation for vectors of the form:</p>
-</li>
-</ul>
-<pre><code class="julia hljs">[x,a,b,a,b,a,b...,y]</code></pre>
-<p>Defining a new pattern is easy and fully supported by the library. The module is standalone.       </div>
+<p>The available patterns are:</p>
+<table><tr><th align="right">Pattern</th><th align="right">Elements</th><th align="right">Minimum length</th></tr><tr><td align="right"><code>ZeroPattern&#40;x&#41;</code></td><td align="right"><code>&#91;0, 0, 0, 0, …&#93;</code></td><td align="right">1</td></tr><tr><td align="right"><code>FillPattern&#40;a&#41;</code></td><td align="right"><code>&#91;a, a, a, a, …&#93;</code></td><td align="right">1</td></tr><tr><td align="right"><code>InitialValuePattern&#40;a, b&#41;</code></td><td align="right"><code>&#91;a, b, b, b, …&#93;</code></td><td align="right">2</td></tr><tr><td align="right"><code>FinalValuePattern&#40;a, b&#41;</code></td><td align="right"><code>&#91;a, a, a, …, a, b&#93;</code></td><td align="right">2</td></tr><tr><td align="right"><code>PaddedFillPattern&#40;x, a, y&#41;</code></td><td align="right"><code>&#91;x, a, a, …, a, y&#93;</code></td><td align="right">3</td></tr><tr><td align="right"><code>EvenOddPattern&#40;a, b&#41;</code></td><td align="right"><code>&#91;a, b, a, b, …&#93;</code></td><td align="right">2</td></tr><tr><td align="right"><code>PaddedEvenOddPattern&#40;x, a, b, y&#41;</code></td><td align="right"><code>&#91;x, a, b, a, b, …, y&#93;</code></td><td align="right">4</td></tr></table>
+<p>New patterns can be defined outside the package, see <a href="#new-patterns">New Patterns</a>.       </div>
     </div>
   </div>
 </section>
@@ -170,21 +165,13 @@ padding-right:  10px;
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>Getting Started</h2> <strong><em>EvenOddPattern</em></strong></p>
-<p>To build a EvenOddPattern one needs to provide:</p>
-<ul>
-<li><p>the value for odd indices</p>
-</li>
-<li><p>the value for even indices</p>
-</li>
-</ul>
-<p>The various values must be of the same type and the length must be greater than one. The way to build an PatternVector with such pattern is the following:</p>
+        <h2>Getting Started</h2> Install the package with</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> Pkg
+Pkg.add(url = <span class="hljs-string">&quot;https://github.com/rcalxrc08/PatternVectors.jl&quot;</span>)</code></pre>
+<p><strong><em>Building a PatternVector</em></strong></p>
+<p>A PatternVector is built from a length and a pattern. All the values of a pattern must have the same type, and the length must be at least the minimum length of the pattern.</p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
-value_odd=<span class="hljs-number">0.2</span>
-value_even=<span class="hljs-number">2.3</span>
-pattern=EvenOddPattern(value_odd,value_even)
-length_av=<span class="hljs-number">7</span>
-x_av=PatternVector(length_av,pattern)</code></pre><pre><code class="plaintext hljs">7-element PatternVector{Float64, EvenOddPattern{Float64}}:
+x_av = PatternVector(<span class="hljs-number">7</span>, EvenOddPattern(<span class="hljs-number">0.2</span>, <span class="hljs-number">2.3</span>))</code></pre><pre><code class="plaintext hljs">7-element PatternVector{Float64, EvenOddPattern{Float64}}:
  0.2
  2.3
  0.2
@@ -192,26 +179,9 @@ x_av=PatternVector(length_av,pattern)</code></pre><pre><code class="plaintext hl
  0.2
  2.3
  0.2</code></pre>
-<p><strong><em>PaddedEvenOddPattern</em></strong></p>
-<p>To build a PaddedEvenOddPattern one needs to provide: </p>
-<ul>
-<li><p>the initial value</p>
-</li>
-<li><p>the value for even indices</p>
-</li>
-<li><p>the value for odd indices</p>
-</li>
-<li><p>the final value</p>
-</li>
-</ul>
-<p>The various values must be of the same type and the length must be greater than three. The way to build an PatternVector with such pattern is the following:</p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
-initial_value=<span class="hljs-number">0.2</span>
-value_odd=-<span class="hljs-number">0.2</span>
-value_even=<span class="hljs-number">2.3</span>
-final_value=<span class="hljs-number">1.3</span>
-length_av=<span class="hljs-number">7</span>
-x_av=PatternVector(length_av,PaddedEvenOddPattern(initial_value,value_even,value_odd,final_value))</code></pre><pre><code class="plaintext hljs">7-element PatternVector{Float64, PaddedEvenOddPattern{Float64}}:
+initial_value, value_even, value_odd, final_value = <span class="hljs-number">0.2</span>, <span class="hljs-number">2.3</span>, -<span class="hljs-number">0.2</span>, <span class="hljs-number">1.3</span>
+x_av = PatternVector(<span class="hljs-number">7</span>, PaddedEvenOddPattern(initial_value, value_even, value_odd, final_value))</code></pre><pre><code class="plaintext hljs">7-element PatternVector{Float64, PaddedEvenOddPattern{Float64}}:
   0.2
   2.3
  -0.2
@@ -219,16 +189,14 @@ x_av=PatternVector(length_av,PaddedEvenOddPattern(initial_value,value_even,value
  -0.2
   2.3
   1.3</code></pre>
-<p><strong><em>Operation on Pattern Vectors</em></strong></p>
-<p>The following applies:</p>
+<p><strong><em>Operations on PatternVectors</em></strong></p>
 <ul>
-<li><p>PatternVector is closed under getindex for range of integers.</p>
+<li><p>PatternVector is closed under indexing with ranges.</p>
 </li>
 </ul>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
-apv=PatternVector(<span class="hljs-number">70</span>,PaddedEvenOddPattern(<span class="hljs-number">0.2</span>,-<span class="hljs-number">2.0</span>,<span class="hljs-number">4.0</span>,<span class="hljs-number">2.3</span>))
-z_small=apv[<span class="hljs-number">1</span>:<span class="hljs-number">7</span>:<span class="hljs-number">50</span>]
-z_small</code></pre><pre><code class="plaintext hljs">8-element PatternVector{Float64, PaddedEvenOddPattern{Float64}}:
+apv = PatternVector(<span class="hljs-number">70</span>, PaddedEvenOddPattern(<span class="hljs-number">0.2</span>, -<span class="hljs-number">2.0</span>, <span class="hljs-number">4.0</span>, <span class="hljs-number">2.3</span>))
+z_small = apv[<span class="hljs-number">1</span>:<span class="hljs-number">7</span>:<span class="hljs-number">50</span>]</code></pre><pre><code class="plaintext hljs">8-element PatternVector{Float64, PaddedEvenOddPattern{Float64}}:
   0.2
  -2.0
   4.0
@@ -238,14 +206,12 @@ z_small</code></pre><pre><code class="plaintext hljs">8-element PatternVector{Fl
   4.0
  -2.0</code></pre>
 <ul>
-<li><p>Any scalar unary function applied directly to PatternVectors will produce an array of the same type.</p>
+<li><p>A scalar function broadcast over a PatternVector is evaluated once per distinct value and returns a PatternVector.</p>
 </li>
 </ul>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
-pattern=EvenOddPattern(<span class="hljs-number">0.2</span>,-<span class="hljs-number">2.0</span>)
-av=PatternVector(<span class="hljs-number">10</span>,pattern)
-z_sin=@. sin(av)
-z_sin</code></pre><pre><code class="plaintext hljs">10-element PatternVector{Float64, EvenOddPattern{Float64}}:
+av = PatternVector(<span class="hljs-number">10</span>, EvenOddPattern(<span class="hljs-number">0.2</span>, -<span class="hljs-number">2.0</span>))
+z_sin = @. sin(av)</code></pre><pre><code class="plaintext hljs">10-element PatternVector{Float64, EvenOddPattern{Float64}}:
   0.19866933079506122
  -0.9092974268256817
   0.19866933079506122
@@ -256,30 +222,65 @@ z_sin</code></pre><pre><code class="plaintext hljs">10-element PatternVector{Flo
  -0.9092974268256817
   0.19866933079506122
  -0.9092974268256817</code></pre>
-<p><strong><em>Operation between Pattern Vectors</em></strong></p>
-<p>The following applies:</p>
 <ul>
-<li><p>Binary scalar functions between PatternVectors will produce a PatternVector.</p>
-</li>
-<li><p>Binary scalar functions between PatternVector and <strong>any</strong> other type deriving from AbstractArray will produce an array of the other type.</p>
+<li><p>Broadcasting between PatternVectors returns a PatternVector; broadcasting a PatternVector with <strong>any</strong> other AbstractArray returns an array of the other type.</p>
 </li>
 </ul>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
-x=PatternVector(<span class="hljs-number">10</span>,EvenOddPattern(<span class="hljs-number">0.2</span>,<span class="hljs-number">2.3</span>))
-y=randn(<span class="hljs-number">10</span>)
-z=PatternVector(<span class="hljs-number">10</span>,PaddedEvenOddPattern(<span class="hljs-number">0.2</span>,-<span class="hljs-number">2.0</span>,<span class="hljs-number">4.0</span>,<span class="hljs-number">2.3</span>))
-@. sin(x)*y+z</code></pre><pre><code class="plaintext hljs">10-element Vector{Float64}:
- -0.015893591446924538
- -3.2142157989246525
-  3.8080613093245685
- -3.1779104967557004
-  4.18518726211417
- -1.8808905264299902
-  3.839182818404713
- -2.3812577895908795
-  4.0844738664700575
-  3.345802537195805</code></pre>
+x = PatternVector(<span class="hljs-number">10</span>, EvenOddPattern(<span class="hljs-number">0.2</span>, <span class="hljs-number">2.3</span>))
+y = randn(<span class="hljs-number">10</span>)
+z = PatternVector(<span class="hljs-number">10</span>, PaddedEvenOddPattern(<span class="hljs-number">0.2</span>, -<span class="hljs-number">2.0</span>, <span class="hljs-number">4.0</span>, <span class="hljs-number">2.3</span>))
+@. sin(x) * y + z</code></pre><pre><code class="plaintext hljs">10-element Vector{Float64}:
+  0.14981229871897658
+ -2.53313440993953
+  3.8153985099617094
+ -1.884853150889154
+  3.657641237753993
+ -1.6874466052157202
+  3.9377778720175356
+ -2.433627519174819
+  3.9700391130767314
+  2.401498072312879</code></pre>
+<ul>
+<li><p>Simpson&#39;s rule without index loops:</p>
+</li>
+</ul>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
+simpson(f_x, h) = h * sum(PatternVector(length(f_x), PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>, <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>, <span class="hljs-number">1</span>/<span class="hljs-number">3</span>)) .* f_x)
+h = <span class="hljs-number">0.01</span>
+simpson(exp.(<span class="hljs-number">0</span>:h:<span class="hljs-number">1</span>), h) - (exp(<span class="hljs-number">1</span>) - <span class="hljs-number">1</span>)</code></pre><pre><code class="plaintext hljs">9.545941814792513e-11</code></pre>
 <p>      </div>
+    </div>
+  </div>
+</section>
+<section id="gpu" class="scrollspy">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10 mx-auto">
+        <h2>GPU Support</h2> The main objective of this library is to write code without iterating on indices, for both CPU and GPU. Unlike standard Julia arrays, a PatternVector is an immutable <code>isbits</code> object, so it is sent to the GPU as a kernel argument without any specialization of the code and without scalar indexing:</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, CUDA
+CUDA.allowscalar(<span class="hljs-literal">false</span>)
+x = PatternVector(<span class="hljs-number">10</span>, EvenOddPattern(<span class="hljs-number">0.2f0</span>, <span class="hljs-number">2.3f0</span>))
+z = PatternVector(<span class="hljs-number">10</span>, PaddedEvenOddPattern(<span class="hljs-number">0.2f0</span>, -<span class="hljs-number">2.0f0</span>, <span class="hljs-number">4.0f0</span>, <span class="hljs-number">2.3f0</span>))
+y = cu(randn(<span class="hljs-built_in">Float32</span>, <span class="hljs-number">10</span>))
+@. sin(x) * y + z   <span class="hljs-comment"># CuArray</span></code></pre>
+<p>      </div>
+    </div>
+  </div>
+</section>
+<section id="ad" class="scrollspy section-bg-color">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10 mx-auto">
+        <h2>Automatic Differentiation</h2> | Backend | Support | Gradient with respect to a PatternVector | |–-|–-|–-| | <a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a> | ChainRules rules shipped with the package | a PatternVector for expressions involving only patterns, a dense vector when mixed with dense arrays | | <a href="https://github.com/chalk-lab/Mooncake.jl">Mooncake.jl</a> | package extension, with a dedicated rule for broadcasts mixing PatternVectors and arrays &#40;CPU and CUDA&#41; | a structural tangent holding the gradient of the pattern fields | | <a href="https://github.com/EnzymeAD/Enzyme.jl">Enzyme.jl</a> | works natively, no extension needed | pass the vector as <code>Active</code>: the result is a PatternVector whose <code>.pattern</code> holds the gradient |</p>
+<p>With Mooncake and Enzyme the gradient with respect to a PatternVector is accumulated directly on its pattern values, never on a dense vector, so its cost does not depend on the length:</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, Zygote
+f(a, b, x) = sum(sin.(PatternVector(length(x), EvenOddPattern(a, b))) .* x)
+Zygote.gradient(f, <span class="hljs-number">0.3</span>, <span class="hljs-number">0.5</span>, rand(<span class="hljs-number">100</span>))
+
+v = PatternVector(<span class="hljs-number">10</span>^<span class="hljs-number">12</span>, PaddedEvenOddPattern(<span class="hljs-number">1.0</span>, <span class="hljs-number">2.0</span>, <span class="hljs-number">3.0</span>, <span class="hljs-number">4.0</span>))
+Zygote.gradient(v -&gt; sum(v .* v), v)   <span class="hljs-comment"># immediate, despite the 10^12 elements</span></code></pre>
+<p>With Enzyme, a PatternVector is an immutable struct: pass it as <code>Active</code> &#40;a <code>Duplicated</code> shadow stays zero&#41;, and pass constant dense arrays as <code>Duplicated</code> or enable <code>set_runtime_activity</code>, as for any broadcast in Enzyme.       </div>
     </div>
   </div>
 </section>
@@ -287,176 +288,180 @@ z=PatternVector(<span class="hljs-number">10</span>,PaddedEvenOddPattern(<span c
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>Performances Comparison</h2> Here the common usages of the package are tested.</p>
+        <h2>Performances Comparison</h2> Weights <code>w &#61; &#91;a, b, c, b, c, …, d&#93;</code> built from four scalars, either as a dense vector &#40;<code>&#91;a, b, c, d&#93;&#91;idx&#93;</code>&#41; or as <code>PatternVector&#40;n, PaddedEvenOddPattern&#40;a, b, c, d&#41;&#41;</code>; gradients with respect to <code>a, b, c, d</code> and, when present, the dense <code>x</code>. n &#61; 10^5, Julia 1.13, Intel i7-8550U, single thread; all gradients agree across backends.</p>
+<table><tr><th align="right">Computation</th><th align="right">Storage of <code>w</code></th><th align="right">Forward</th><th align="right">Zygote</th><th align="right">Mooncake</th><th align="right">Enzyme</th></tr><tr><td align="right"><code>sum&#40;w .* x&#41;</code></td><td align="right">dense</td><td align="right">273 µs</td><td align="right">1.35 ms</td><td align="right">8.62 ms</td><td align="right">1.16 ms</td></tr><tr><td align="right"></td><td align="right">PatternVector</td><td align="right">116 µs</td><td align="right">603 µs</td><td align="right">1.09 ms</td><td align="right">508 µs</td></tr><tr><td align="right"><code>sum&#40;sin.&#40;w .* x&#41; .* exp.&#40;w&#41;&#41;</code></td><td align="right">dense</td><td align="right">2.11 ms</td><td align="right">5.22 ms</td><td align="right">13.3 ms</td><td align="right">6.64 ms</td></tr><tr><td align="right"></td><td align="right">PatternVector</td><td align="right">1.19 ms</td><td align="right">3.36 ms</td><td align="right">4.28 ms</td><td align="right">3.48 ms</td></tr><tr><td align="right"><code>sum&#40;exp.&#40;w&#41; .* w&#41;</code></td><td align="right">dense</td><td align="right">932 µs</td><td align="right">2.67 ms</td><td align="right">9.80 ms</td><td align="right">3.27 ms</td></tr><tr><td align="right"></td><td align="right">PatternVector</td><td align="right">61 ns</td><td align="right">1.6 µs</td><td align="right">447 ns</td><td align="right">155 ns</td></tr></table>
+<p>The last row involves only the PatternVector: its cost does not depend on n &#40;the same timings at n &#61; 10^3&#41;.</p>
+<p>The PatternVector is never materialized: <code>exp.&#40;w&#41;</code> is evaluated four times instead of n, and the gradient of the pattern values is accumulated in registers instead of on a dense vector. The script is <a href="https://github.com/rcalxrc08/PatternVectors.jl/blob/main/etc/benchmarks.jl"><code>etc/benchmarks.jl</code></a>.</p>
+<p>A broader suite, covering every pattern with several element types &#40;Float16, Float64, irrationals, dual numbers&#41;, functions and gradients, is in <a href="https://github.com/rcalxrc08/PatternVectors.jl/tree/main/benchmark"><code>benchmark</code></a> and runs on CI, which prints its summary tables.</p>
+<p>The following benchmarks are run when this page is built.</p>
 <p><strong><em>Simple multiplication</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools
-n=<span class="hljs-number">10_000</span>
-x=PatternVector(n,EvenOddPattern(<span class="hljs-number">0.2</span>,<span class="hljs-number">2.3</span>))
-y=randn(n)
-x_c=collect(x)
-<span class="hljs-meta">@btime</span> @. $x*$y;
-<span class="hljs-meta">@btime</span> @. $x_c*$y;</code></pre><pre><code class="plaintext hljs">  3.824 μs (8 allocations: 78.43 KiB)
-  3.547 μs (3 allocations: 78.20 KiB)
+n = <span class="hljs-number">10_000</span>
+x = PatternVector(n, EvenOddPattern(<span class="hljs-number">0.2</span>, <span class="hljs-number">2.3</span>))
+y = randn(n)
+x_c = collect(x)
+<span class="hljs-meta">@btime</span> @. $x * $y;
+<span class="hljs-meta">@btime</span> @. $x_c * $y;</code></pre><pre><code class="plaintext hljs">  3.551 μs (8 allocations: 78.43 KiB)
+  3.348 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Flipping sign based on index and sum</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
-n=<span class="hljs-number">10_000</span>
+n = <span class="hljs-number">10_000</span>
 <span class="hljs-keyword">function</span> f_std_scalar(f_x)
-	N=length(f_x)
-	sum_z=zero(eltype(f_x))
-	<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:N
-		w=ifelse(isodd(i),<span class="hljs-number">1</span>,-<span class="hljs-number">1</span>)
-		sum_z+=<span class="hljs-meta">@views</span> <span class="hljs-meta">@inbounds</span> w*f_x[i]
-	<span class="hljs-keyword">end</span>
-	<span class="hljs-keyword">return</span> sum_z
-<span class="hljs-keyword">end</span>
-
-<span class="hljs-keyword">function</span> f_std_scalar_2(f_x)
-	N=length(f_x)
-	sum_z=zero(eltype(f_x))
-	<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:N
-		<span class="hljs-keyword">if</span>(isodd(i))
-			sum_z+=<span class="hljs-meta">@views</span> <span class="hljs-meta">@inbounds</span> f_x[i]
-		<span class="hljs-keyword">else</span>
-			sum_z-=<span class="hljs-meta">@views</span> <span class="hljs-meta">@inbounds</span> f_x[i]
-		<span class="hljs-keyword">end</span>
+	sum_z = zero(eltype(f_x))
+	<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> eachindex(f_x)
+		w = ifelse(isodd(i), <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>)
+		sum_z += <span class="hljs-meta">@inbounds</span> w * f_x[i]
 	<span class="hljs-keyword">end</span>
 	<span class="hljs-keyword">return</span> sum_z
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_std_vec(f_x)
-	N=length(f_x)
-	idx=<span class="hljs-number">1</span>:N
-	W=@. ifelse(isodd(idx),<span class="hljs-number">1</span>,-<span class="hljs-number">1</span>)
-	<span class="hljs-keyword">return</span> sum(W.*f_x)
+	idx = <span class="hljs-number">1</span>:length(f_x)
+	W = @. ifelse(isodd(idx), <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>)
+	<span class="hljs-keyword">return</span> sum(W .* f_x)
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_std_vec_linear_algebra(f_x)
-	N=length(f_x)
-	idx=<span class="hljs-number">1</span>:N
-	W=@. ifelse(isodd(idx),<span class="hljs-number">1</span>,-<span class="hljs-number">1</span>)
-	<span class="hljs-keyword">return</span> dot(W,f_x)
+	idx = <span class="hljs-number">1</span>:length(f_x)
+	W = @. ifelse(isodd(idx), <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>)
+	<span class="hljs-keyword">return</span> dot(W, f_x)
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_apv(f_x)
-	N=length(f_x)
-	W=PatternVector(n,EvenOddPattern(<span class="hljs-number">1</span>,-<span class="hljs-number">1</span>))
-	<span class="hljs-keyword">return</span> sum(W.*f_x)
+	W = PatternVector(length(f_x), EvenOddPattern(<span class="hljs-number">1</span>, -<span class="hljs-number">1</span>))
+	<span class="hljs-keyword">return</span> sum(W .* f_x)
 <span class="hljs-keyword">end</span>
-x=randn(n)
-f_x=@. sin(x)+x*cos(x)
+x = randn(n)
+f_x = @. sin(x) + x * cos(x)
 <span class="hljs-meta">@btime</span> f_std_scalar($f_x);
-<span class="hljs-meta">@btime</span> f_std_scalar_2($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec_linear_algebra($f_x);
-<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  5.540 μs (0 allocations: 0 bytes)
-  5.691 μs (0 allocations: 0 bytes)
-  7.382 μs (6 allocations: 156.39 KiB)
-  8.194 μs (2 allocations: 78.16 KiB)
-  4.750 μs (8 allocations: 78.43 KiB)
+<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  9.257 μs (0 allocations: 0 bytes)
+  6.252 μs (6 allocations: 156.39 KiB)
+  11.151 μs (2 allocations: 78.16 KiB)
+  4.523 μs (8 allocations: 78.43 KiB)
 </code></pre>
 <p><strong><em>Simpson Integration</em></strong></p>
-<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools,LinearAlgebra
-n2=<span class="hljs-number">10_000</span>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
+n2 = <span class="hljs-number">10_001</span>
 <span class="hljs-keyword">function</span> f_simpson_std_scalar(f_x)
-	N=length(f_x)
-	sum_z=zero(eltype(f_x))
+	N = length(f_x)
+	sum_z = zero(eltype(f_x))
 	<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-number">1</span>:N
-		w=ifelse(i==<span class="hljs-number">1</span>,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,ifelse(i==N,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>))
-		sum_z+=<span class="hljs-meta">@views</span> <span class="hljs-meta">@inbounds</span> w*f_x[i]
+		w = ifelse(i == <span class="hljs-number">1</span> || i == N, <span class="hljs-number">1</span>/<span class="hljs-number">3</span>, ifelse(iseven(i), <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>))
+		sum_z += <span class="hljs-meta">@inbounds</span> w * f_x[i]
 	<span class="hljs-keyword">end</span>
 	<span class="hljs-keyword">return</span> sum_z
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_simpson_std_vec(f_x)
-	N=length(f_x)
-	idx=<span class="hljs-number">1</span>:N
-	W=@. ifelse(idx==<span class="hljs-number">1</span>,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,ifelse(idx==N,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>))
-	<span class="hljs-keyword">return</span> sum(W.*f_x)
-<span class="hljs-keyword">end</span>
-
-<span class="hljs-keyword">function</span> f_simpson_std_vec_linear_algebra(f_x)
-	N=length(f_x)
-	idx=<span class="hljs-number">1</span>:N
-	W=@. ifelse(idx==<span class="hljs-number">1</span>,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,ifelse(idx==N,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>))
-	<span class="hljs-keyword">return</span> dot(W,f_x)
+	N = length(f_x)
+	idx = <span class="hljs-number">1</span>:N
+	W = @. ifelse((idx == <span class="hljs-number">1</span>) | (idx == N), <span class="hljs-number">1</span>/<span class="hljs-number">3</span>, ifelse(iseven(idx), <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>))
+	<span class="hljs-keyword">return</span> sum(W .* f_x)
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_simpson_apv(f_x)
-	N=length(f_x)
-	W=PatternVector(N,PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>))
-	<span class="hljs-keyword">return</span> sum(W.*f_x)
+	W = PatternVector(length(f_x), PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>, <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>, <span class="hljs-number">1</span>/<span class="hljs-number">3</span>))
+	<span class="hljs-keyword">return</span> sum(W .* f_x)
 <span class="hljs-keyword">end</span>
 
 <span class="hljs-keyword">function</span> f_simpson_apv_linear_algebra(f_x)
-	N=length(f_x)
-	W=PatternVector(N,PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>,<span class="hljs-number">4</span>/<span class="hljs-number">3</span>,<span class="hljs-number">1</span>/<span class="hljs-number">3</span>))
-	<span class="hljs-keyword">return</span> dot(W,f_x)
+	W = PatternVector(length(f_x), PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>, <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>, <span class="hljs-number">1</span>/<span class="hljs-number">3</span>))
+	<span class="hljs-keyword">return</span> dot(W, f_x)
 <span class="hljs-keyword">end</span>
 
-x2=randn(n2)
-f_x2=@. sin(x2)+x2*cos(x2)
+x2 = randn(n2)
+f_x2 = @. sin(x2) + x2 * cos(x2)
 <span class="hljs-meta">@btime</span> f_simpson_std_scalar($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_std_vec($f_x2);
-<span class="hljs-meta">@btime</span> f_simpson_std_vec_linear_algebra($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_apv($f_x2);
-<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  5.580 μs (0 allocations: 0 bytes)
-  7.327 μs (6 allocations: 156.39 KiB)
-  4.069 μs (3 allocations: 78.20 KiB)
-  4.606 μs (8 allocations: 78.48 KiB)
-  8.911 μs (0 allocations: 0 bytes)
+<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.257 μs (0 allocations: 0 bytes)
+  6.670 μs (6 allocations: 156.52 KiB)
+  4.901 μs (8 allocations: 78.54 KiB)
+  9.267 μs (0 allocations: 0 bytes)
 </code></pre>
-<p>To be noticed the performance improvements thanks to the usage of PatternVector, and to be noticed that the first function proposed is not compatible with the CUDA.jl stack.</p>
-<p>      </div>
+<p>The PatternVector versions match the hand-written loops, which instead do not run on the CUDA.jl stack.       </div>
     </div>
   </div>
 </section>
-<section id="gpu" class="scrollspy section-bg-color">
+<section id="new_patterns" class="scrollspy section-bg-color">
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>GPU Support</h2> The main objective of this library is to write code without iterating on indices for both cpu and gpu support. The main class is PatternVector which, unlike the standard arrays in julia, it is an immutable object, hence we can send it to gpu without issues, and being in most of the cases &#40;up to the client&#41; a lightweight object, this sending operation is efficient.       </div>
+        <h2>New Patterns Definition</h2> A pattern is an immutable struct subtyping <code>AbstractPattern&#123;T&#125;</code>. As an example, a pattern repeating three values, <code>&#91;a, b, c, a, b, c, …&#93;</code>:</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, ChainRulesCore
+<span class="hljs-keyword">import</span> PatternVectors: AbstractPattern, ArrayStylePatternVector, pattern_minimum_size, getindex_pattern,
+    getindex_pattern_range, materialize_pattern, flat_index, determine_mixed_pattern, pattern_to_vector_pullback
+
+<span class="hljs-keyword">struct</span> CyclicPattern{T} &lt;: AbstractPattern{T}
+    a::T
+    b::T
+    c::T
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment"># 1. Smallest length the pattern is defined for</span>
+pattern_minimum_size(::CyclicPattern) = <span class="hljs-number">3</span>
+
+<span class="hljs-comment"># 2. Element at index `ind` of a vector of length `n`</span>
+getindex_pattern(x::CyclicPattern, ind::<span class="hljs-built_in">Int</span>, ::<span class="hljs-built_in">Int</span>) = (x.a, x.b, x.c)[mod1(ind, <span class="hljs-number">3</span>)]
+
+<span class="hljs-comment"># 3. Indexing with a range: returns the new length and pattern</span>
+getindex_pattern_range(x::CyclicPattern, r::<span class="hljs-built_in">AbstractRange</span>{<span class="hljs-built_in">Int</span>}, n::<span class="hljs-built_in">Int</span>) =
+    length(r), CyclicPattern(ntuple(k -&gt; getindex_pattern(x, r[k], n), <span class="hljs-number">3</span>)...)
+
+<span class="hljs-comment"># 4. Broadcast: evaluate the function once per distinct value (`flat_index(arg, k)` is element k of any argument)</span>
+<span class="hljs-keyword">function</span> materialize_pattern(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVector{P}}) <span class="hljs-keyword">where</span> {P &lt;: CyclicPattern}
+    bc_f = Broadcast.flatten(bc)
+    n = length(first(Broadcast.combine_axes(bc_f.args...)))
+    <span class="hljs-keyword">return</span> n, CyclicPattern(ntuple(k -&gt; bc_f.f(flat_index.(bc_f.args, k)...), <span class="hljs-number">3</span>)...)
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment"># 5. Pattern resulting from broadcasting with other patterns (UnknownPattern, i.e. no result, otherwise)</span>
+determine_mixed_pattern(::<span class="hljs-built_in">Type</span>{&lt;:CyclicPattern{L}}, ::<span class="hljs-built_in">Type</span>{&lt;:CyclicPattern{M}}) <span class="hljs-keyword">where</span> {L, M} = CyclicPattern{promote_type(L, M)}
+determine_mixed_pattern(::<span class="hljs-built_in">Type</span>{&lt;:FillPattern{L}}, ::<span class="hljs-built_in">Type</span>{&lt;:CyclicPattern{M}}) <span class="hljs-keyword">where</span> {L, M} = CyclicPattern{promote_type(L, M)}
+determine_mixed_pattern(::<span class="hljs-built_in">Type</span>{&lt;:ZeroPattern{L}}, ::<span class="hljs-built_in">Type</span>{&lt;:CyclicPattern{M}}) <span class="hljs-keyword">where</span> {L, M} = CyclicPattern{promote_type(L, M)}
+
+<span class="hljs-comment"># 6. Optional but recommended: O(1) sum (the default iterates over all elements)</span>
+<span class="hljs-keyword">function</span> Base.sum(x::PatternVector{T, &lt;:CyclicPattern}) <span class="hljs-keyword">where</span> {T}
+    q, r = divrem(x.n, <span class="hljs-number">3</span>)
+    <span class="hljs-keyword">return</span> (q + (r &gt;= <span class="hljs-number">1</span>)) * x.pattern.a + (q + (r &gt;= <span class="hljs-number">2</span>)) * x.pattern.b + q * x.pattern.c
+<span class="hljs-keyword">end</span></code></pre>
+<p><code>determine_mixed_pattern</code> is checked in both argument orders, so each pair is defined once.</p>
+<p><strong><em>Automatic differentiation</em></strong></p>
+<p>Enzyme needs nothing more. <code>pattern_to_vector_pullback</code> maps a cotangent vector <code>Δ</code> &#40;dense or PatternVector&#41; onto the pattern fields: Zygote always needs it, together with the rule for the constructor; Mooncake needs it when the pattern is broadcast together with arrays other than <code>Array</code> &#40;e.g. <code>CuArray</code>&#41;, while with <code>Array</code>s its rule differentiates <code>getindex_pattern</code> directly.</p>
+<pre><code class="julia hljs"><span class="hljs-keyword">function</span> ChainRulesCore.rrule(::<span class="hljs-built_in">Type</span>{CyclicPattern}, a, b, c)
+    CyclicPattern_pb(Δ) = NoTangent(), Δ.a, Δ.b, Δ.c
+    <span class="hljs-keyword">return</span> CyclicPattern(a, b, c), CyclicPattern_pb
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">function</span> pattern_to_vector_pullback(::<span class="hljs-built_in">Type</span>{&lt;:CyclicPattern{T}}, Δ, n) <span class="hljs-keyword">where</span> {T}
+    o, z = one(T), zero(T)
+    <span class="hljs-keyword">return</span> CyclicPattern(sum(Δ .* PatternVector(n, CyclicPattern(o, z, z))),
+                         sum(Δ .* PatternVector(n, CyclicPattern(z, o, z))),
+                         sum(Δ .* PatternVector(n, CyclicPattern(z, z, o))))
+<span class="hljs-keyword">end</span></code></pre>
+<p>For more details have a look at the patterns already implemented in <code>src/patterns</code>.       </div>
     </div>
   </div>
 </section>
-<section id="new_patterns" class="scrollspy">
+<section id="similar" class="scrollspy">
   <div class="container">
     <div class="row">
       <div class="col-lg-10 mx-auto">
-        <h2>New Patterns Definition</h2> In most of the cases the provided patterns suffice the applications.  In case you need a new pattern, the following steps are needed:</p>
+        <h2>Similar Packages</h2></p>
 <ul>
-<li><p>Define a container &#40;namely MyNewPattern&#123;T&#125;&#41; inheriting from AbstractPattern&#123;T&#125; where T is the data type you are going to store in the array.</p>
+<li><p><a href="https://github.com/JuliaArrays/FillArrays.jl">FillArrays.jl</a>: lazy constant arrays &#40;<code>Fill</code>, <code>Zeros</code>, <code>Ones</code>&#41; of any dimension, the multidimensional counterpart of <code>FillPattern</code> and <code>ZeroPattern</code>.</p>
 </li>
-<li><p>Define a constructor for it.</p>
+<li><p><a href="https://github.com/JuliaArrays/LazyArrays.jl">LazyArrays.jl</a>: lazy concatenations and broadcasts; a padded vector can be written as <code>Vcat&#40;x, Fill&#40;a, n - 2&#41;, y&#41;</code>, though broadcasts over it are not reduced to the distinct values and alternating layouts are not covered.</p>
 </li>
-<li><p>Implement the interface:</p>
-<ul>
-<li><p>pattern&#95;minimum&#95;size: define the minimum size for your type</p>
+<li><p><a href="https://github.com/JuliaSparse/SparseArrays.jl">SparseArrays</a>: vectors that are zero except at a few indices.</p>
 </li>
-<li><p>getindex&#95;pattern: define the logic to extract scalars</p>
-</li>
-<li><p>getindex&#95;pattern_range: define the logic to extract ranges</p>
-</li>
-<li><p>materialize&#95;pattern: define the way to compute broadcasted functions with the new pattern</p>
+<li><p><a href="https://github.com/JuliaArrays/StaticArrays.jl">StaticArrays.jl</a>: <code>isbits</code> arrays of small, fixed size, for the opposite case &#40;few elements, all different&#41;.</p>
 </li>
 </ul>
-</li>
-</ul>
-<p>In case you need to mix your pattern with other existing patterns, you will have to specify we is the more general pattern able to store both:</p>
-<ul>
-<li><p>determine&#95;mixed&#95;pattern&#40;::Type&#123;T&#125;, ::Type&#123;V&#125;&#41; where &#123;T &lt;: MyNewPattern&#123;M&#125;, V &lt;: MyOldPattern&#123;N}} where &#123;M, N&#125; &#61; MyWinningPattern&#123;promote_type&#40;M, N&#41;&#125;</p>
-</li>
-</ul>
-<p>And you are ready to go&#33;</p>
-<p>In case you want to use your new pattern in AD applications you will have to provide two additional implementations:</p>
-<ul>
-<li><p>ChainRulesCore.rrule&#40;::Type&#123;MyNewPattern&#125;, args...&#41;: the rrule for the constructor of your newly defined pattern.</p>
-</li>
-<li><p>pattern&#95;to&#95;vector&#95;pullback: the rrule to convert from pattern to array.</p>
-</li>
-</ul>
-<p>For more details have a look at the already implemented types.</p>
-<p>      </div>
+<p>PatternVectors.jl targets structured vectors of arbitrary length, with broadcasting, GPU and AD support built in.       </div>
     </div>
   </div>
 </section>

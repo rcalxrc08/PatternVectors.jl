@@ -250,9 +250,9 @@ version = "0.3.27+1"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "NetworkOptions", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "d1ea2f05c285ae58f82a9e53f8025d9b1dfc1a5f"
+git-tree-sha1 = "9129758d7825178aec8001e879f32c3bd15bd38e"
 uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.8.0"
+version = "1.9.0"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -267,9 +267,9 @@ version = "1.8.2"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
-git-tree-sha1 = "b596f159d7167f0205e199ab70d6e256ed0bf639"
+git-tree-sha1 = "e24b87585a307a3c3225cb9b64d03802a1e01edd"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.8.9"
+version = "2.8.10"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "Random", "SHA", "TOML", "Tar", "UUIDs", "p7zip_jll"]
