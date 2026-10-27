@@ -1,6 +1,7 @@
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 LazyArrays = "5078a376-72f3-5289-bfd5-ec5146d43c02"
 Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
@@ -14,6 +15,7 @@ PatternVectors = {path = ".."}
 
 [compat]
 ChainRulesCore = "1"
+Enzyme = "0.13"
 LazyArrays = "2"
 Mooncake="0.5"
 Zygote = "0.7"

@@ -72,6 +72,22 @@ Was ~1.3x slower than Zygote. Fixed by (1) one dual direction per argument inste
 (the main win: `h` went from ~14 ms to ~5 ms at n = 10^5) and (2) the `:store` strategy.
 Possible follow-up: choose the strategy automatically (no static estimate of the cost of `f` is available).
 
+## Enzyme (no extension needed)
+
+Enzyme 0.13 differentiates PatternVector structurally, like Mooncake without its custom rule; tests in
+`test/test_Enzyme.jl` (vs Zygote for scalar inputs, vs Mooncake for PatternVector gradients, n = 10^12 check).
+- PatternVector is immutable: pass it as `Active`, not `Duplicated` (a `Duplicated` shadow silently stays zero).
+  The returned gradient is a PatternVector with `n = 0` (Enzyme zeroes integer fields): read `.pattern`.
+- Pattern gradients are O(1) in n (0.08 µs for `sum(p .* p)` at n = 10^3 ... 10^9).
+- A constant dense array in a broadcast raises EnzymeRuntimeActivityError (same with plain Arrays): pass it
+  `Duplicated` or use `set_runtime_activity(Reverse)`.
+- n = 10^5: `sum(p .* x)` 0.52 ms (Mooncake 1.1 ms); `sum(h.(p, x))` with sin/exp 9.5 ms (Mooncake 3.8-6 ms),
+  but Enzyme on the dense copy of `p` costs the same (8.9 ms): the gap is Enzyme's broadcast, not the patterns.
+  A possible follow-up is an EnzymeRule for `materialize_mixture` reusing the NDual approach of MooncakeExt.
+- CUDA: Enzyme fails on the MX150 even for dense CuArrays (kernel image load, CUDA error 801); with a
+  PatternVector argument it fails earlier (`MixedDuplicated` MethodError in Enzyme's CUDA broadcast rule). Not
+  verifiable on this machine.
+
 ## Other open points
 
 - `rrule(::typeof(sum), x::AbstractArray{T,1})` in `src/rrules.jl` is type piracy (applies to every vector
