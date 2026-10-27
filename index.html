@@ -231,16 +231,16 @@ x = PatternVector(<span class="hljs-number">10</span>, EvenOddPattern(<span clas
 y = randn(<span class="hljs-number">10</span>)
 z = PatternVector(<span class="hljs-number">10</span>, PaddedEvenOddPattern(<span class="hljs-number">0.2</span>, -<span class="hljs-number">2.0</span>, <span class="hljs-number">4.0</span>, <span class="hljs-number">2.3</span>))
 @. sin(x) * y + z</code></pre><pre><code class="plaintext hljs">10-element Vector{Float64}:
-  0.14981229871897658
- -2.53313440993953
-  3.8153985099617094
- -1.884853150889154
-  3.657641237753993
- -1.6874466052157202
-  3.9377778720175356
- -2.433627519174819
-  3.9700391130767314
-  2.401498072312879</code></pre>
+  0.13531785655380102
+ -2.4778455907889
+  3.8872104387414725
+ -2.8147436918016946
+  4.221132952499268
+ -2.330291223619686
+  4.061282191669887
+ -1.3073151475406584
+  3.794979130303897
+  2.9002850557643933</code></pre>
 <ul>
 <li><p>Simpson&#39;s rule without index loops:</p>
 </li>
@@ -248,7 +248,7 @@ z = PatternVector(<span class="hljs-number">10</span>, PaddedEvenOddPattern(<spa
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors
 simpson(f_x, h) = h * sum(PatternVector(length(f_x), PaddedEvenOddPattern(<span class="hljs-number">1</span>/<span class="hljs-number">3</span>, <span class="hljs-number">4</span>/<span class="hljs-number">3</span>, <span class="hljs-number">2</span>/<span class="hljs-number">3</span>, <span class="hljs-number">1</span>/<span class="hljs-number">3</span>)) .* f_x)
 h = <span class="hljs-number">0.01</span>
-simpson(exp.(<span class="hljs-number">0</span>:h:<span class="hljs-number">1</span>), h) - (exp(<span class="hljs-number">1</span>) - <span class="hljs-number">1</span>)</code></pre><pre><code class="plaintext hljs">9.545941814792513e-11</code></pre>
+simpson(exp.(<span class="hljs-number">0</span>:h:<span class="hljs-number">1</span>), h) - (exp(<span class="hljs-number">1</span>) - <span class="hljs-number">1</span>)</code></pre><pre><code class="plaintext hljs">9.545919610332021e-11</code></pre>
 <p>      </div>
     </div>
   </div>
@@ -301,8 +301,8 @@ x = PatternVector(n, EvenOddPattern(<span class="hljs-number">0.2</span>, <span 
 y = randn(n)
 x_c = collect(x)
 <span class="hljs-meta">@btime</span> @. $x * $y;
-<span class="hljs-meta">@btime</span> @. $x_c * $y;</code></pre><pre><code class="plaintext hljs">  3.551 μs (8 allocations: 78.43 KiB)
-  3.348 μs (3 allocations: 78.20 KiB)
+<span class="hljs-meta">@btime</span> @. $x_c * $y;</code></pre><pre><code class="plaintext hljs">  4.201 μs (8 allocations: 78.43 KiB)
+  4.505 μs (3 allocations: 78.20 KiB)
 </code></pre>
 <p><strong><em>Flipping sign based on index and sum</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
@@ -337,10 +337,10 @@ f_x = @. sin(x) + x * cos(x)
 <span class="hljs-meta">@btime</span> f_std_scalar($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec($f_x);
 <span class="hljs-meta">@btime</span> f_std_vec_linear_algebra($f_x);
-<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  9.257 μs (0 allocations: 0 bytes)
-  6.252 μs (6 allocations: 156.39 KiB)
-  11.151 μs (2 allocations: 78.16 KiB)
-  4.523 μs (8 allocations: 78.43 KiB)
+<span class="hljs-meta">@btime</span> f_apv($f_x);</code></pre><pre><code class="plaintext hljs">  8.125 μs (0 allocations: 0 bytes)
+  7.358 μs (6 allocations: 156.39 KiB)
+  9.654 μs (2 allocations: 78.16 KiB)
+  5.101 μs (8 allocations: 78.43 KiB)
 </code></pre>
 <p><strong><em>Simpson Integration</em></strong></p>
 <pre><code class="julia hljs"><span class="hljs-keyword">using</span> PatternVectors, BenchmarkTools, LinearAlgebra
@@ -377,10 +377,10 @@ f_x2 = @. sin(x2) + x2 * cos(x2)
 <span class="hljs-meta">@btime</span> f_simpson_std_scalar($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_std_vec($f_x2);
 <span class="hljs-meta">@btime</span> f_simpson_apv($f_x2);
-<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.257 μs (0 allocations: 0 bytes)
-  6.670 μs (6 allocations: 156.52 KiB)
-  4.901 μs (8 allocations: 78.54 KiB)
-  9.267 μs (0 allocations: 0 bytes)
+<span class="hljs-meta">@btime</span> f_simpson_apv_linear_algebra($f_x2);</code></pre><pre><code class="plaintext hljs">  9.494 μs (0 allocations: 0 bytes)
+  7.075 μs (6 allocations: 156.52 KiB)
+  5.223 μs (8 allocations: 78.54 KiB)
+  10.856 μs (0 allocations: 0 bytes)
 </code></pre>
 <p>The PatternVector versions match the hand-written loops, which instead do not run on the CUDA.jl stack.       </div>
     </div>
