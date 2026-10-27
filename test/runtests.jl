@@ -536,3 +536,4 @@ end
 
 include("test_Zygote.jl")
 include("test_Mooncake.jl")
+include("test_Enzyme.jl")
