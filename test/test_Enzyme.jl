@@ -61,7 +61,7 @@ end
         dpv = Enzyme.autodiff(Reverse, Const(f), Active, Active(pv), Duplicated(x, dx), Duplicated(X, dX))[1][1]
         rule = Mooncake.build_rrule(f, pv, x, X)
         _, (_, mpv, mx, mX) = Mooncake.value_and_gradient!!(rule, f, pv, x, X)
-        @test all(enzyme_pattern_fields(dpv) .≈ mooncake_pattern_fields(mpv))
+        @test Float64[enzyme_pattern_fields(dpv)...] ≈ Float64[mooncake_pattern_fields(mpv)...]
         @test dx ≈ mx
         @test dX ≈ mX
     end

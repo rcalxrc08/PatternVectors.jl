@@ -123,7 +123,8 @@ end
 
 # Materialize a broadcasted object with PatternMixtureArrayStyle, materializing all arguments as needed.
 function Base.materialize(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N,T},Nothing,<:F,<:R}) where {N,T,F,R}
-    mat_args = materialize_if_needed.(bc.args)
+    # map (not broadcast) over the argument tuple: it stays inferable for nested broadcasts
+    mat_args = map(materialize_if_needed, bc.args)
     bc_flat = Broadcast.flatten(Base.Broadcast.Broadcasted(get_style(bc.style), bc.f, mat_args))
     return materialize_mixture(bc_flat.style, bc_flat.f, bc_flat.args...)
 end

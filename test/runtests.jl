@@ -534,6 +534,21 @@ end
     @test incr == 4
 end
 
+# Nested broadcasts mixing PatternVectors and dense arrays must be inferable: an inference failure makes
+# Enzyme drop gradients on Julia 1.11 (see test_Enzyme.jl), besides costing a dynamic dispatch.
+@testset "Inference of nested mixed broadcasts" begin
+    pv = PatternVector(11, FillPattern(1.5))
+    pv2 = PatternVector(11, PaddedEvenOddPattern(1.0, 2.0, 3.0, 4.0))
+    x = rand(11)
+    X = rand(11, 3)
+    f1(p, x) = cos.(p .* x) .+ p
+    f2(p, q, x) = exp.(sin.(q .* x) .* p) .- q ./ x
+    f3(p, q, X) = X .* (p .+ q) .+ sin.(p)
+    @test @inferred(f1(pv, x)) ≈ f1(collect(pv), x)
+    @test @inferred(f2(pv, pv2, x)) ≈ f2(collect(pv), collect(pv2), x)
+    @test @inferred(f3(pv, pv2, X)) ≈ f3(collect(pv), collect(pv2), X)
+end
+
 include("test_Zygote.jl")
 include("test_Mooncake.jl")
 include("test_Enzyme.jl")
