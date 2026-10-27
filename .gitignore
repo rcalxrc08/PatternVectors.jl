@@ -11,3 +11,6 @@ Manifest.toml
 test/Manifest.toml
 
 page/__site
+# benchmark outputs (uploaded as CI artifacts)
+benchmark/results.json
+benchmark/results.md

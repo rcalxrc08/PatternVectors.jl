@@ -1,0 +1,33 @@
+name: Benchmark
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  benchmark:
+    name: Benchmark - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+      - uses: julia-actions/cache@v2
+      - name: Install benchmark environment
+        run: julia --project=benchmark -e 'using Pkg; Pkg.instantiate()'
+      - name: Run benchmarks
+        run: julia --project=benchmark benchmark/runbenchmarks.jl
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark/results.json
+            benchmark/results.md
+            benchmark/tune.json
