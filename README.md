@@ -95,6 +95,7 @@ y = cu(randn(Float32, 10))
 |---|---|---|
 | [Zygote.jl](https://github.com/FluxML/Zygote.jl) | ChainRules rules shipped with the package | a `PatternVector` for expressions involving only patterns, a dense vector when mixed with dense arrays |
 | [Mooncake.jl](https://github.com/chalk-lab/Mooncake.jl) | package extension, with a dedicated rule for broadcasts mixing `PatternVector`s and arrays (CPU and CUDA) | a structural tangent holding the gradient of the pattern fields |
+| [ReverseDiff.jl](https://github.com/JuliaDiff/ReverseDiff.jl) | package extension (ReverseDiff 1.18 or later), for broadcasts mixing `PatternVector`s with tracked values | not available: a `PatternVector` enters as a constant |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) | works natively, no extension needed | pass the vector as `Active`: the result is a `PatternVector` whose `.pattern` holds the gradient |
 
 ```julia

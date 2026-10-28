@@ -129,6 +129,12 @@ function Base.materialize(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyl
     return materialize_mixture(bc_flat.style, bc_flat.f, bc_flat.args...)
 end
 
+# Output container of `copy`, used by the callers that instantiate and copy the Broadcasted directly instead of
+# going through `materialize` (e.g. the ReverseDiff fallback): it is the one of the wrapped style.
+function Base.similar(bc::Base.Broadcast.Broadcasted{<:PatternMixtureArrayStyle}, ::Type{ElType}, dims) where {ElType}
+    return similar(Base.Broadcast.Broadcasted(get_style(bc.style), bc.f, bc.args, bc.axes), ElType, dims)
+end
+
 # Broadcast of a flat function over already materialized arguments (dense arrays, PatternVectors, scalars).
 # Single entry point for AD-specific rules (see MooncakeExt).
 materialize_mixture(style, f, args...) = Base.materialize(Base.Broadcast.Broadcasted(style, f, args))

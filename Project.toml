@@ -8,14 +8,18 @@ ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 
 [weakdeps]
 Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
+ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [extensions]
 MooncakeExt = "Mooncake"
+ReverseDiffExt = "ReverseDiff"
 SparseArraysExt = "SparseArrays"
 
 [compat]
 ChainRulesCore = "1"
+Mooncake = "0.5"
+ReverseDiff = "1"
 julia = "1.9, 1.10, 1.11, 1.12"
 
 [extras]
