@@ -75,6 +75,8 @@ end
     @test !is_prim(Tuple{typeof(mm), DS, typeof(mulstrict), pvT, Vector{Float64}}) # NDual not accepted: derived rule
     @test !is_prim(Tuple{typeof(mm), DS, typeof(*), pvT, Vector{Float32}})         # mixed precision: derived rule
     @test !is_prim(Tuple{typeof(mm), DS, typeof(*), pvT, Base.RefValue{Float64}})   # differentiable Ref: derived rule
+    simpson(n) = PatternVector(n, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1))) # constant weights
+    @test is_prim(Tuple{typeof(mm), DS, typeof(*), typeof(simpson(10)), Vector{Float64}})
 
     gen(i, n, a, b, c, d) = ifelse(i == 1, a, ifelse(i == n, d, ifelse(isodd(i), c, b)))
     h(u, v, w) = sin(u + v) * w + u^2 / 3
@@ -88,25 +90,23 @@ end
          (a, b, c, d, s, x, X) -> (r = 1:length(x); sum(@. exp(ifelse(isodd(r), a, b) * c) * sin(x)^2 + x * d))),
         ((a, b, c, d, s, x, X) -> sum(X .* pv(size(X, 1), a, b, c, d) .+ s), (a, b, c, d, s, x, X) -> sum(X .* dv(size(X, 1), a, b, c, d) .+ s)),
         ((a, b, c, d, s, x, X) -> sum(X[1:1, :] .* pv(size(X, 1), a, b, c, d)), (a, b, c, d, s, x, X) -> sum(X[1:1, :] .* dv(size(X, 1), a, b, c, d))),
+        ((a, b, c, d, s, x, X) -> sum(PatternVector(1, FillPattern(a)) .* x), (a, b, c, d, s, x, X) -> sum(a .* x)),
+        ((a, b, c, d, s, x, X) -> s / 3 * sum(simpson(length(x)) .* x), (a, b, c, d, s, x, X) -> s / 3 * sum(collect(simpson(length(x))) .* x)),
+        # a ZeroPattern has no differentiable field: the PatternVector is a constant of the rule
+        ((a, b, c, d, s, x, X) -> sum(PatternVector(length(x), ZeroPattern(a)) .* x .+ PatternVector(length(x), FillPattern(b)) .* x), (a, b, c, d, s, x, X) -> sum(b .* x)),
     )
     args = (0.3, -1.2, 0.7, 2.1, 0.4, rand(9), rand(9, 4))
-    strategy = Base.get_extension(PatternVectors, :MooncakeExt).PARTIALS_STRATEGY
-    default_strategy = strategy[]
-    for partials_strategy in (:store, :recompute)
-        strategy[] = partials_strategy
-        for (f_pv, f_ref) in cases
-            @test all(mooncake_gradient(f_pv, args...) .≈ mooncake_gradient(f_ref, args...))
-        end
+    for (f_pv, f_ref) in cases
+        @test all(mooncake_gradient(f_pv, args...) .≈ mooncake_gradient(f_ref, args...))
     end
-    strategy[] = default_strategy
 end
 
-# The broadcast-based reverse pass serves non-Array arrays (e.g. CuArray). A broadcast style other than
-# DefaultArrayStyle over plain Arrays selects it on CPU: compare it with the fused loop through rrule!! itself.
+# The reverse pass is made of broadcasts and reductions so that it serves non-Array arrays (e.g. CuArray).
+# A broadcast style other than DefaultArrayStyle over plain Arrays exercises it on CPU through rrule!! itself.
 struct GenericArrayStyle{N} <: Base.Broadcast.AbstractArrayStyle{N} end
 Base.similar(bc::Base.Broadcast.Broadcasted{GenericArrayStyle{N}}, ::Type{T}) where {N, T} = similar(Array{T}, axes(bc))
 
-@testset "Mooncake broadcast-based reverse pass" begin
+@testset "Mooncake rule with a non-default broadcast style" begin
     numbers(r::Mooncake.RData) = numbers(r.data)
     numbers(r::Union{Tuple, NamedTuple}) = reduce(vcat, map(numbers, collect(r)); init = Float64[])
     numbers(r::Number) = [r]
@@ -126,15 +126,28 @@ Base.similar(bc::Base.Broadcast.Broadcasted{GenericArrayStyle{N}}, ::Type{T}) wh
         (*, (rand(n, 3), pv)),
         (*, (rand(1, 3), pv)),
         (Base.literal_pow, (Ref(^), pv, Ref(Val(2)))),
+        (*, (PatternVector(n, EvenOddPattern(Int8(1), Int8(-1))), rand(n))),
+        (+, (PatternVector(n, ZeroPattern(1.0)), rand(n))),
     )
     for (f, xs) in cases
         N = maximum(x -> x isa AbstractArray ? ndims(x) : 0, xs)
-        y_broadcast, r_broadcast, d_broadcast = run_rule(GenericArrayStyle{N}(), f, xs...)
-        y_fused, r_fused, d_fused = run_rule(Base.Broadcast.DefaultArrayStyle{N}(), f, xs...)
-        @test y_broadcast ≈ y_fused
-        @test r_broadcast ≈ r_fused
-        for (a, b) in zip(d_broadcast, d_fused)
+        y_generic, r_generic, d_generic = run_rule(GenericArrayStyle{N}(), f, xs...)
+        y_default, r_default, d_default = run_rule(Base.Broadcast.DefaultArrayStyle{N}(), f, xs...)
+        @test y_generic ≈ y_default
+        @test r_generic ≈ r_default
+        for (a, b) in zip(d_generic, d_default)
             a isa Array && @test a ≈ b
         end
     end
+end
+
+# A fused expression can be too large to inline in the broadcast kernel on NDuals: the rule must still not box the elements
+@testset "Mooncake rule allocates per array, not per element" begin
+    long_expression(a, b, x) = (p = PatternVector(length(x), EvenOddPattern(a, b)); sum(@. sqrt(abs(p * x) + 1) * tanh(p * x) + a * sin(p * x) * exp(-b * x^2)))
+    function allocated_after_compilation(rule, x)
+        Mooncake.value_and_gradient!!(rule, long_expression, 0.3, 0.7, x)
+        return @allocated Mooncake.value_and_gradient!!(rule, long_expression, 0.3, 0.7, x)
+    end
+    x = rand(10^4)
+    @test allocated_after_compilation(Mooncake.build_rrule(long_expression, 0.3, 0.7, x), x) < 8 * sizeof(x)
 end

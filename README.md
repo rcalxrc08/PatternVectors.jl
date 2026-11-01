@@ -118,12 +118,12 @@ n = 10^5, Julia 1.13, Intel i7-8550U, single thread; all gradients agree across 
 
 | Computation | Storage of `w` | Forward | Zygote | Mooncake | Enzyme |
 |---|---|---|---|---|---|
-| `sum(w .* x)` | dense | 273 µs | 1.35 ms | 8.62 ms | 1.16 ms |
-| | PatternVector | 116 µs | 603 µs | 1.09 ms | 508 µs |
-| `sum(sin.(w .* x) .* exp.(w))` | dense | 2.11 ms | 5.22 ms | 13.3 ms | 6.64 ms |
-| | PatternVector | 1.19 ms | 3.36 ms | 4.28 ms | 3.48 ms |
-| `sum(exp.(w) .* w)` | dense | 932 µs | 2.67 ms | 9.80 ms | 3.27 ms |
-| | PatternVector | 61 ns | 1.6 µs | 447 ns | 155 ns |
+| `sum(w .* x)` | dense | 387 µs | 1.86 ms | 11.6 ms | 1.68 ms |
+| | PatternVector | 165 µs | 959 µs | 864 µs | 794 µs |
+| `sum(sin.(w .* x) .* exp.(w))` | dense | 2.77 ms | 7.40 ms | 18.8 ms | 9.81 ms |
+| | PatternVector | 1.64 ms | 4.69 ms | 12.7 ms | 9.00 ms |
+| `sum(exp.(w) .* w)` | dense | 1.27 ms | 4.43 ms | 12.8 ms | 4.80 ms |
+| | PatternVector | 67 ns | 2.2 µs | 671 ns | 228 ns |
 
 The last row involves only the PatternVector: its cost does not depend on n (the same timings at n = 10^3).
 
@@ -185,10 +185,11 @@ end
 
 `determine_mixed_pattern` is checked in both argument orders, so each pair is defined once.
 
-**Automatic differentiation.** Enzyme needs nothing more. `pattern_to_vector_pullback` maps a cotangent vector
-`Δ` (dense or `PatternVector`) onto the pattern fields: Zygote always needs it, together with the rule for the
-constructor; Mooncake needs it when the pattern is broadcast together with arrays other than `Array` (e.g.
-`CuArray`), while with `Array`s its rule differentiates `getindex_pattern` directly.
+**Automatic differentiation.** Enzyme and Mooncake need nothing more. Mooncake's rule for broadcasts mixing
+`PatternVector`s and arrays differentiates `getindex_pattern` on the pattern rebuilt from dual numbers with its
+positional constructor (`CyclicPattern(a, b, c)`), so all fields must have the element type. Zygote needs
+`pattern_to_vector_pullback`, which maps a cotangent vector `Δ` (dense or `PatternVector`) onto the pattern fields,
+together with the rule for the constructor.
 
 ```julia
 function ChainRulesCore.rrule(::Type{CyclicPattern}, a, b, c)
