@@ -111,9 +111,23 @@ function Base.BroadcastStyle(a::PatternMixtureArrayStyle, b::PatternMixtureArray
     return PatternMixtureArrayStyle(get_style(a), get_style(b))
 end
 
-# Materialize broadcasted objects with PatternMixtureArrayStyle.
+# A mixed sub-expression stays lazy, so that it fuses with the outer broadcast: only its pure pattern parts are evaluated.
 function materialize_if_needed(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N,T},Nothing,<:F,<:R}) where {N,T,F,R}
-    return Base.materialize(bc)
+    return Base.Broadcast.Broadcasted(get_style(bc.style), bc.f, map(materialize_if_needed, bc.args))
+end
+
+# The same for a dense sub-expression, which can still contain scalar ones.
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{<:Broadcast.AbstractArrayStyle,Nothing,<:F,<:R}) where {F,R}
+    return Base.Broadcast.Broadcasted(bc.style, bc.f, map(materialize_if_needed, bc.args))
+end
+
+# Plain arithmetic on scalars is evaluated once, otherwise Broadcast.flatten allocates for every element.
+# Only arithmetic: any other function could be impure, like rand(), and it has to stay element by element.
+const ScalarArithmetic = Union{typeof(+),typeof(-),typeof(*),typeof(/),typeof(^)}
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{S,Nothing,<:ScalarArithmetic,<:R}) where {S<:Broadcast.AbstractArrayStyle{0},R}
+    args = map(materialize_if_needed, bc.args)
+    bc_mat = Base.Broadcast.Broadcasted(bc.style, bc.f, args)
+    return any(arg -> arg isa Base.Broadcast.Broadcasted, args) ? bc_mat : Base.materialize(bc_mat)
 end
 
 # Default: return object unchanged if materialization is not needed.

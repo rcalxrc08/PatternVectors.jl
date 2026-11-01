@@ -553,3 +553,60 @@ include("test_Zygote.jl")
 include("test_Mooncake.jl")
 include("test_ReverseDiff.jl")
 include("test_Enzyme.jl")
+
+@testset "Nested mixed broadcasts" begin
+    n = 2^12
+    s = PatternVector(n, EvenOddPattern(Int8(1), Int8(-1)))
+    s_dense = collect(s)
+    x = collect(range(0.5, 1.5, length = n))
+    y = complex.(x, reverse(x))
+    a = 0.25
+
+    nested_real(s, y, a) = @. a * real(s * y)
+    nested_sum(s, y) = @. s * y + y
+    scalar_left(s, y) = @. 3.0 / (2 * pi) * s * real(y)
+    scalar_right(s, y) = @. 3.0 / (2 * pi) * real(y) * s
+    scalar_nested(s, y) = @. 3.0 / (2 * pi) * real(s * y)
+    function allocated_after_compilation(f, args...)
+        f(args...)
+        return @allocated f(args...)
+    end
+
+    @testset "same result and same memory as a dense vector" begin
+        for (f, args) in ((nested_real, (y, a)), (nested_sum, (y,)), (scalar_left, (y,)), (scalar_right, (y,)), (scalar_nested, (y,)))
+            res = f(s, args...)
+            @test res isa Vector
+            @test res ≈ f(s_dense, args...)
+            @test allocated_after_compilation(f, s, args...) <= 2 * allocated_after_compilation(f, s_dense, args...)
+        end
+    end
+
+    @testset "pure pattern parts are evaluated on the pattern" begin
+        calls = Ref(0)
+        counted(v) = (calls[] += 1; 2 * v)
+        res = @. counted(s) * x
+        @test calls[] == 2
+        @test res ≈ 2 .* s_dense .* x
+        calls[] = 0
+        res = @. a * real(counted(s) * y) + x
+        @test calls[] == 2
+        @test res ≈ @. a * real(2 * s_dense * y) + x
+        calls[] = 0
+        res = @. counted(s) + counted(s)
+        @test res isa PatternVector
+        @test calls[] == 4
+    end
+
+    @testset "only arithmetic on scalars is evaluated once" begin
+        # As in Base, anything else stays element by element: it can be impure.
+        res = @. rand() * x * s
+        @test length(unique(res ./ (x .* s_dense))) > 1
+        res = @. x * s * rand()
+        @test length(unique(res ./ (x .* s_dense))) > 1
+        calls = Ref(0)
+        counted() = (calls[] += 1; 2.0)
+        res = @. (2 * counted()) * x * s
+        @test calls[] == n
+        @test res ≈ 4 .* x .* s_dense
+    end
+end
