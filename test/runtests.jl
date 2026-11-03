@@ -610,3 +610,24 @@ include("test_Enzyme.jl")
         @test res ≈ 4 .* x .* s_dense
     end
 end
+
+@testset "dot" begin
+    using LinearAlgebra
+    n = 7
+    y = randn(n)
+    yc = randn(ComplexF64, n)
+    for p in (PatternVector(n, FillPattern(2.5)), PatternVector(n, EvenOddPattern(-1.0, 3.0)), PatternVector(n, PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0)), PatternVector(n, FillPattern(1.0 + 2.0im)))
+        p_dense = collect(p)
+        @test dot(p, y) ≈ dot(p_dense, y)
+        @test dot(y, p) ≈ dot(y, p_dense)
+        @test dot(p, yc) ≈ dot(p_dense, yc)
+        @test dot(yc, p) ≈ dot(yc, p_dense)
+        for q in (PatternVector(n, FillPattern(-0.5)), PatternVector(n, EvenOddPattern(2.0, 1.0)))
+            @test dot(p, q) ≈ dot(p_dense, collect(q))
+            @test dot(q, p) ≈ dot(collect(q), p_dense)
+        end
+        @test_throws DimensionMismatch dot(p, randn(n + 1))
+        @test_throws DimensionMismatch dot(randn(n + 1), p)
+    end
+    @test isempty(filter(pair -> any(m -> m.name == :dot, pair), detect_ambiguities(PatternVectors)))
+end

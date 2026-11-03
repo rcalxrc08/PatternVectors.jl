@@ -157,3 +157,15 @@ mooncake_gradient(f, args...) = Mooncake.value_and_gradient!!(Mooncake.build_rru
     @show "Mooncake grad pattern cuda"
     @btime CUDA.@sync Mooncake.value_and_gradient!!($rule_gpu, $f_mul, $p..., $x_big_cu)
 end
+
+@testset "CUDA dot" begin
+    using LinearAlgebra
+    N = 11
+    x = CuArray(randn(N))
+    for p in (PatternVector(N, FillPattern(2.0)), PatternVector(N, EvenOddPattern(-2.0, 3.0)))
+        @test dot(p, x) ≈ dot(collect(p), collect(x))
+        @test dot(x, p) ≈ dot(collect(x), collect(p))
+    end
+    # the cotangent of sum is a PatternVector, and the pullback of a * x computes dot(Ȳ, x)
+    @test Zygote.gradient(a -> sum(a * x), 2.0)[1] ≈ sum(collect(x))
+end

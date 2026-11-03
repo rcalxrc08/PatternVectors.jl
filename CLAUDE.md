@@ -24,6 +24,7 @@ CI runs on Julia 1.11 and 1.12. The default branch is `main`.
 - [src/patterns/](src/patterns/): one file per pattern. A new pattern only needs the methods listed in "Defining a new pattern" in the README, and can live outside the package.
 - [src/broadcast.jl](src/broadcast.jl): see below.
 - [src/rrules.jl](src/rrules.jl): ChainRulesCore rules (Zygote).
+- [src/linearalgebra.jl](src/linearalgebra.jl): `dot` with broadcasts and a reduction only, so that it runs on the device of a dense argument (the generic `dot` indexes element by element). ChainRules reaches it in reverse mode: the `rrule` of `sum` returns a `PatternVector` cotangent, and the cotangent of a scalar times an array is `dot(Ȳ, B)` (issue #4).
 - [ext/](ext/): `MooncakeExt` (see [MOONCAKE_NOTES.md](MOONCAKE_NOTES.md)), `ReverseDiffExt`, `SparseArraysExt`.
 
 ### Broadcasting

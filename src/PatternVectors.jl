@@ -10,6 +10,7 @@ include("patterns/initialvaluepattern.jl")
 include("patterns/finalvaluepattern.jl")
 include("patterns/paddedfillpattern.jl")
 include("patterns/paddedevenoddpattern.jl")
+include("linearalgebra.jl")
 
 export PatternVector, ZeroPattern, FillPattern, EvenOddPattern, PaddedEvenOddPattern, InitialValuePattern, FinalValuePattern, PaddedFillPattern
 
