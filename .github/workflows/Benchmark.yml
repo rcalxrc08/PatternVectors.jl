@@ -13,18 +13,18 @@ jobs:
     name: Benchmark - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
         with:
           version: '1.12'
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - name: Install benchmark environment
         run: julia --project=benchmark -e 'using Pkg; Pkg.instantiate()'
       - name: Run benchmarks
         run: julia --project=benchmark benchmark/runbenchmarks.jl
       - name: Upload results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: |
