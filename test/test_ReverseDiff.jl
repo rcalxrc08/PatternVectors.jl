@@ -40,3 +40,13 @@ end
         @test ReverseDiff.gradient(y -> f(av, y), x) ≈ ReverseDiff.gradient(y -> f(av_c, y), x)
     end
 end
+
+@testset "ReverseDiff dot" begin
+    using LinearAlgebra
+    n = 6
+    x = randn(n)
+    for p in (PatternVector(n, FillPattern(2.0)), PatternVector(n, EvenOddPattern(-1.0, 3.0)))
+        @test ReverseDiff.gradient(y -> dot(p, y), x) ≈ collect(p)
+        @test ReverseDiff.gradient(y -> dot(y, p), x) ≈ collect(p)
+    end
+end

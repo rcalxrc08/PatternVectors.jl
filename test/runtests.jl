@@ -629,5 +629,7 @@ end
         @test_throws DimensionMismatch dot(p, randn(n + 1))
         @test_throws DimensionMismatch dot(randn(n + 1), p)
     end
-    @test isempty(filter(pair -> any(m -> m.name == :dot, pair), detect_ambiguities(PatternVectors)))
+    # ambiguities among the methods of this package (those with the methods of other packages depend on what is loaded)
+    own(m) = parentmodule(m) === PatternVectors || startswith(string(parentmodule(m)), "ReverseDiffExt")
+    @test isempty(filter(pair -> any(m -> m.name == :dot, pair) && all(own, pair), detect_ambiguities(PatternVectors)))
 end
