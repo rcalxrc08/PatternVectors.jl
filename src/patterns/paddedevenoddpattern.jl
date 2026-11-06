@@ -1,5 +1,12 @@
 ## PaddedEvenOddPattern
-# PaddedEvenOddPattern represents a pattern that alternates between two values for odd and even indices.
+"""
+    PaddedEvenOddPattern(bound_initial_value, value_even, value_odd, bound_final_value)
+
+Alternating pattern with its own first and last values,
+`[bound_initial_value, value_even, value_odd, value_even, …, bound_final_value]`: inside the bounds, `value_even` at
+even indices and `value_odd` at odd ones. Minimum length 4; Simpson's weights are
+`PaddedEvenOddPattern(1/3, 4/3, 2/3, 1/3)`.
+"""
 struct PaddedEvenOddPattern{T} <: AbstractPattern{T}
     bound_initial_value::T
     value_even::T

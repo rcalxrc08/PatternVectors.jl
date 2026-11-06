@@ -13,6 +13,7 @@ The registered versions are in the private registry `rcalxrc08/LocalRegistry`, n
 ```bash
 julia --project -e 'import Pkg; Pkg.test()'             # test/runtests.jl, then the AD backends
 julia --project=benchmark benchmark/runbenchmarks.jl
+julia --project=docs docs/make.jl                      # Documenter site, into docs/build
 julia -e 'using JuliaFormatter; format(".")'            # uses .JuliaFormatter.toml
 ```
 
@@ -25,6 +26,7 @@ CI runs on Julia 1.11 and 1.12. The default branch is `main`.
 - [src/broadcast.jl](src/broadcast.jl): see below.
 - [src/rrules.jl](src/rrules.jl): ChainRulesCore rules (Zygote).
 - [src/linearalgebra.jl](src/linearalgebra.jl): `dot` with broadcasts and a reduction only, so that it runs on the device of a dense argument (the generic `dot` indexes element by element). ChainRules reaches it in reverse mode: the `rrule` of `sum` returns a `PatternVector` cotangent, and the cotangent of a scalar times an array is `dot(Ȳ, B)` (issue #4).
+- [docs/](docs/): Documenter site, published with GitHub Pages from Actions (DeployPage.yml). Markdown tables need `|:--|`: plain `|---|` columns are right-aligned. The logo and favicon live in etc/ and are copied by make.jl.
 - [ext/](ext/): `MooncakeExt` (see [MOONCAKE_NOTES.md](MOONCAKE_NOTES.md)), `ReverseDiffExt`, `SparseArraysExt`.
 
 ### Broadcasting

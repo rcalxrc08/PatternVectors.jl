@@ -1,7 +1,11 @@
 ## ZeroPattern
 
-# ZeroPattern represents a pattern that fills all indices with zeros.
+"""
+    ZeroPattern(x)
 
+Pattern of a vector of zeros of the type of `x`, `[0, 0, 0, …]`: it stores no value, `x` only sets the element type.
+Minimum length 1.
+"""
 struct ZeroPattern{T} <: AbstractPattern{T}
     function ZeroPattern(::T) where {T}
         return new{T}()

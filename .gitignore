@@ -10,7 +10,8 @@ Manifest.toml
 
 test/Manifest.toml
 
-page/__site
+docs/src/assets/logo.png
+docs/src/assets/favicon.ico
 # benchmark outputs (uploaded as CI artifacts)
 benchmark/results.json
 benchmark/results.md

@@ -1,6 +1,11 @@
 
 ## EvenOddPattern
-# EvenOddPattern represents a pattern that alternates between two values for odd and even indices.
+"""
+    EvenOddPattern(value_odd, value_even)
+
+Pattern alternating two values, `[value_odd, value_even, value_odd, …]`: `value_odd` at odd indices, `value_even` at
+even ones. Minimum length 2.
+"""
 struct EvenOddPattern{T} <: AbstractPattern{T}
     value_odd::T
     value_even::T

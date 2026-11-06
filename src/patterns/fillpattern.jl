@@ -1,5 +1,9 @@
 ## FillPattern
-# FillPattern represents a pattern that fills all indices with the same value.
+"""
+    FillPattern(a)
+
+Pattern of a constant vector, `[a, a, a, …]`. Minimum length 1.
+"""
 struct FillPattern{T} <: AbstractPattern{T}
     value::T
     function FillPattern(x::T) where {T}

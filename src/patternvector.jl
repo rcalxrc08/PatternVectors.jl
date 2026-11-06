@@ -4,7 +4,31 @@ abstract type AbstractPattern{T} <: AbstractPatternUntyped end
 
 struct UnknownPattern <: AbstractPatternUntyped end
 
-#Implementation of the concrete class PatternVector
+"""
+    PatternVector(n, pattern)
+
+Immutable `AbstractVector` of length `n` whose elements are given by `pattern`, an `AbstractPattern`: only `n` and the
+values of the pattern are stored, so a `PatternVector` of `isbits` values is `isbits`. All the values of the pattern
+have the same type, the element type, and `n` must be at least the minimum length of the pattern.
+
+A broadcast on `PatternVector`s and scalars only evaluates the function once per distinct value and returns a
+`PatternVector`; mixed with another array it returns an array of the type of the other one. Indexing with a range
+returns a `PatternVector`, and `sum` is `O(1)`.
+
+```jldoctest
+julia> x = PatternVector(6, EvenOddPattern(1.0, 2.0))
+6-element PatternVector{Float64, EvenOddPattern{Float64}}:
+ 1.0
+ 2.0
+ 1.0
+ 2.0
+ 1.0
+ 2.0
+
+julia> sum(x)
+9.0
+```
+"""
 struct PatternVector{T, P} <: AbstractArray{T, 1}
     n::Int64
     pattern::P

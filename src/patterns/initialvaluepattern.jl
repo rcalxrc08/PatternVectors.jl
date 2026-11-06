@@ -1,6 +1,10 @@
 
 ## InitialValuePattern
-# InitialValuePattern represents a pattern that has all of the values that are the same apart from the first.
+"""
+    InitialValuePattern(first_value, other_value)
+
+Pattern with a different first value, `[first_value, other_value, other_value, …]`. Minimum length 2.
+"""
 struct InitialValuePattern{T} <: AbstractPattern{T}
     first_value::T
     other_value::T

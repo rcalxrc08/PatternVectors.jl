@@ -1,5 +1,10 @@
 ## PaddedFillPattern
-# PaddedFillPattern represents a pattern that alternates between two values for odd and even indices.
+"""
+    PaddedFillPattern(bound_initial_value, value, bound_final_value)
+
+Constant pattern with its own first and last values, `[bound_initial_value, value, …, value, bound_final_value]`.
+Minimum length 3.
+"""
 struct PaddedFillPattern{T} <: AbstractPattern{T}
     bound_initial_value::T
     value::T
