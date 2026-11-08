@@ -6,12 +6,13 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PatternVectors = "92638b5e-77be-42fd-8598-99573a47aaa0"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
-[sources]
-PatternVectors = {path = ".."}
+[sources.PatternVectors]
+path = ".."
 
 [compat]
 BenchmarkTools = "1"
 ChainRulesCore = "1"
 Documenter = "1"
 LinearAlgebra = "1"
+PatternVectors = "0.1"
 Zygote = "0.6, 0.7"
