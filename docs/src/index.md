@@ -20,7 +20,7 @@
 <img src="assets/figures/hero-patterns-dark.svg" alt="The patterns of PatternVectors.jl, each a vector of 20 elements coloured by value">
 <img src="assets/figures/hero-patterns-light.svg" alt="The patterns of PatternVectors.jl, each a vector of 20 elements coloured by value">
 <figcaption><span class="fc-legend"><i class="fc-ramp"></i>element value</span>
-Read from PatternVectors when this site was built: 20 elements each, and how many distinct values each holds.</figcaption>
+Read from PatternVectors when this site was built: 20 elements each, and how many values each stores.</figcaption>
 </figure>
 </div>
 ```

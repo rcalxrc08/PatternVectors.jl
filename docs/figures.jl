@@ -10,8 +10,8 @@ const FIGURES = mkpath(joinpath(@__DIR__, "src", "assets", "figures"))
 const THEMES = (light = (series = ["#2563d9", "#0a8a6f", "#b86e0b", "#0b7fb3", "#2f8a3c", "#c2456e"], text = "#1f2328", muted = "#5b6470", axis = "#b9b4ab", grid = "#e6e3de", diverging = ["#2563d9", "#f7f6f3", "#c47a12"]), dark = (series = ["#4f8cff", "#00d4aa", "#ffb84d", "#38cfff", "#7ee787", "#ff6b9d"], text = "#f5f7fa", muted = "#a0aec0", axis = "#3a4466", grid = "#252d47", diverging = ["#4f8cff", "#151b2e", "#ffb84d"]))
 
 # The hero: every pattern of the package as a strip of cells, each cell coloured by the value of the element, read from
-# the PatternVector itself; on the right, what the vector stores.
-const HERO_PATTERNS = ["ZeroPattern" => PatternVector(20, ZeroPattern(0.0)), "FillPattern" => PatternVector(20, FillPattern(0.7)), "InitialValuePattern" => PatternVector(20, InitialValuePattern(1.0, 0.35)), "FinalValuePattern" => PatternVector(20, FinalValuePattern(0.35, 1.0)), "PaddedFillPattern" => PatternVector(20, PaddedFillPattern(0.15, 0.6, 1.0)), "EvenOddPattern" => PatternVector(20, EvenOddPattern(0.2, 0.9)), "PaddedEvenOddPattern" => PatternVector(20, PaddedEvenOddPattern(1 / 3, 4 / 3, 2 / 3, 1 / 3))]
+# the PatternVector itself; on the right, how many values the vector stores (its pattern's fields).
+const HERO_PATTERNS = ["ZeroPattern" => PatternVector(20, ZeroPattern(0.0)), "FillPattern" => PatternVector(20, FillPattern(0.7)), "InitialValuePattern" => PatternVector(20, InitialValuePattern(1.0, 0.35)), "FinalValuePattern" => PatternVector(20, FinalValuePattern(0.35, 1.0)), "PaddedFillPattern" => PatternVector(20, PaddedFillPattern(0.15, 0.6, 1.0)), "EvenOddPattern" => PatternVector(20, EvenOddPattern(0.2, 0.9)), "PaddedEvenOddPattern" => PatternVector(20, PaddedEvenOddPattern(0.15, 1.0, 0.55, 1.25))]
 
 function hero_svg(theme::Symbol)
     v = SURFACE_THEMES[theme]
@@ -20,7 +20,7 @@ function hero_svg(theme::Symbol)
     io = IOBuffer()
     print(io, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 $W $H\" font-family=\"system-ui, -apple-system, Segoe UI, Roboto, sans-serif\" role=\"img\" aria-label=\"The patterns of PatternVectors.jl, each a vector of 20 elements coloured by value\">")
     print(io, "<text x=\"$(x0)\" y=\"40\" fill=\"$(v.muted)\" font-size=\"15\">20 elements each, read from the PatternVector</text>")
-    print(io, "<text x=\"$(W - 20)\" y=\"40\" fill=\"$(v.muted)\" font-size=\"15\" text-anchor=\"end\">distinct values</text>")
+    print(io, "<text x=\"$(W - 20)\" y=\"40\" fill=\"$(v.muted)\" font-size=\"15\" text-anchor=\"end\">stored values</text>")
     for (k, (name, x)) in enumerate(HERO_PATTERNS)
         y = y0 + (k - 1) * row
         lo, hi = 0.0, 4 / 3
@@ -29,8 +29,8 @@ function hero_svg(theme::Symbol)
             c = x[i] == 0 ? v.floor : surface_ramp(v.ramp, (x[i] - lo) / (hi - lo))
             print(io, "<rect x=\"$(x0 + (i - 1) * (cell + gap))\" y=\"$y\" width=\"$cell\" height=\"$cell\" rx=\"5\" fill=\"$c\" stroke=\"$(v.axis)\" stroke-width=\"$(x[i] == 0 ? 1 : 0)\"/>")
         end
-        distinct = length(unique(collect(x)))
-        print(io, "<text x=\"$(W - 20)\" y=\"$(y + 18)\" fill=\"$(v.marker)\" font-size=\"17\" font-weight=\"700\" text-anchor=\"end\" font-family=\"ui-monospace, Cascadia Code, Consolas, monospace\">$distinct</text>")
+        stored = sizeof(x.pattern) ÷ sizeof(eltype(x))
+        print(io, "<text x=\"$(W - 20)\" y=\"$(y + 18)\" fill=\"$(v.marker)\" font-size=\"17\" font-weight=\"700\" text-anchor=\"end\" font-family=\"ui-monospace, Cascadia Code, Consolas, monospace\">$stored</text>")
     end
     print(io, "</svg>")
     return String(take!(io))
