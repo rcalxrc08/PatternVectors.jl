@@ -1,5 +1,19 @@
+```@raw html
+<div class="fc-page-head">
+<p class="fc-kicker"><span>Guide 03</span> Against dense vectors and index loops</p>
+```
+
 # Performance
 
+
+```@raw html
+<div class="fc-meta"><span>BenchmarkTools</span><span>gradients</span><span class="is-live">computed at build time</span></div>
+<nav class="fc-toc">
+<a href="#Gradients"><b>01</b>Gradients</a>
+<a href="#Against-index-loops"><b>02</b>Against index loops</a>
+</nav>
+</div>
+```
 ## Gradients
 
 Weights `w = [a, b, c, b, c, …, d]` built from four scalars, either as a dense vector (`[a, b, c, d][idx]`) or as

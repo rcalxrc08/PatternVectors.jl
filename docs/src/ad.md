@@ -1,5 +1,19 @@
+```@raw html
+<div class="fc-page-head">
+<p class="fc-kicker"><span>Guide 02</span> Gradients on the pattern values</p>
+```
+
 # Automatic differentiation
 
+
+```@raw html
+<div class="fc-meta"><span>Zygote</span><span>Mooncake</span><span>Enzyme</span><span>ReverseDiff</span></div>
+<nav class="fc-toc">
+<a href="#Zygote"><b>01</b>Zygote</a>
+<a href="#Enzyme"><b>02</b>Enzyme</a>
+</nav>
+</div>
+```
 | Backend | Support | Gradient with respect to a `PatternVector` |
 |:--|:--|:--|
 | [Zygote.jl](https://github.com/FluxML/Zygote.jl) | ChainRules rules shipped with the package | a `PatternVector` for expressions involving only patterns, a dense vector when mixed with dense arrays |

@@ -1,7 +1,16 @@
+```@raw html
+<div class="fc-page-head">
+<p class="fc-kicker"><span>Guide 04</span> Define your own pattern</p>
+```
+
 # New patterns
 
 A pattern is an immutable struct subtyping `AbstractPattern{T}`, and it can be defined outside the package. The
 methods below are all that is needed; as an example, a pattern repeating three values, `[a, b, c, a, b, c, …]`:
+
+```@raw html
+</div>
+```
 
 ```@example cyclic
 using PatternVectors, ChainRulesCore

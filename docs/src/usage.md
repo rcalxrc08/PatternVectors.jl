@@ -1,5 +1,22 @@
+```@raw html
+<div class="fc-page-head">
+<p class="fc-kicker"><span>Guide 01</span> Build, index, broadcast</p>
+```
+
 # Getting started
 
+
+```@raw html
+<div class="fc-meta"><span>patterns</span><span>broadcasting</span><span>Simpson&#x27;s rule</span><span class="is-live">computed at build time</span></div>
+<nav class="fc-toc">
+<a href="#Building-a-PatternVector"><b>01</b>Building a PatternVector</a>
+<a href="#Indexing"><b>02</b>Indexing</a>
+<a href="#Broadcasting"><b>03</b>Broadcasting</a>
+<a href="#Simpson&#x27;s-rule"><b>04</b>Simpson&#x27;s rule</a>
+<a href="#Testing"><b>05</b>Testing</a>
+</nav>
+</div>
+```
 ## Building a PatternVector
 
 A [`PatternVector`](@ref) is built from a length and a pattern. All the values of a pattern must have the same type,
