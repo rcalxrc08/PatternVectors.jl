@@ -4,6 +4,11 @@ abstract type AbstractPattern{T} <: AbstractPatternUntyped end
 
 struct UnknownPattern <: AbstractPatternUntyped end
 
+# The error of the constructor, out of line: inlined, its message (a boxed Int, a string) puts allocations in every
+# function that builds a PatternVector, such as the materialize of a broadcast, and Enzyme ≥ 0.13.219 aborts on the
+# shadow of such an allocation (EnzymeAD/Enzyme.jl#4053).
+@noinline throw_length_error(n, P, minimum_size) = throw(DomainError(n, "length of PatternVector for pattern $P must be greater or equal to $minimum_size. Provided is $n."))
+
 """
     PatternVector(n, pattern)
 
@@ -34,7 +39,7 @@ struct PatternVector{T, P} <: AbstractArray{T, 1}
     pattern::P
     function PatternVector(n::Int64, pattern::P) where {P <: AbstractPattern{T}} where {T}
         minimum_size = pattern_minimum_size(pattern)
-        (minimum_size <= n) || throw(DomainError(n, "length of PatternVector for pattern $P must be greater or equal to $minimum_size. Provided is $n."))
+        (minimum_size <= n) || throw_length_error(n, P, minimum_size)
         return new{T, P}(n, pattern)
     end
 end

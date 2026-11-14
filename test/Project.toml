@@ -17,8 +17,7 @@ PatternVectors = {path = ".."}
 
 [compat]
 ChainRulesCore = "1"
-# below 0.13.219: it aborts on sum(p .* p .+ 2) with an LLVM assertion (EnzymeAD/Enzyme.jl#4053, #15)
-Enzyme = "0.13.0 - 0.13.218"
+Enzyme = "0.13"
 LazyArrays = "2"
 Mooncake = "0.5"
 ReverseDiff = "1.18"
