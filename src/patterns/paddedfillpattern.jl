@@ -58,7 +58,8 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FinalValuePattern{M}, 
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: InitialValuePattern{L}, V <: FinalValuePattern{N}} where {L, N} = PaddedFillPattern{promote_type(L, N)}
 
 function ChainRulesCore.rrule(::Type{PaddedFillPattern}, bound_initial_value, value, bound_final_value)
-    function AbstractPattern_pb(Δapv)
+    function AbstractPattern_pb(Δ)
+        Δapv = unthunk(Δ)
         NoTangent(), Δapv.bound_initial_value, Δapv.value, Δapv.bound_final_value
     end
     return PaddedFillPattern(bound_initial_value, value, bound_final_value), AbstractPattern_pb

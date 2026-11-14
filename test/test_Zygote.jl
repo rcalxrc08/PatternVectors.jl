@@ -272,3 +272,21 @@ end
     @test Zygote.gradient(f_chain, a, n_small)[1] ≈ Zygote.gradient(f_chain_dense, a, n_small)[1]
     @test isfinite(Zygote.gradient(f_chain, a, 10^12)[1])
 end
+
+# Zygote ≥ 0.7.17 passes the cotangent of a scalar as a deferred Thunk (here, of `sum(x) .* 2`): the rules unthunk it,
+# so that the cotangent of `sum` stays a PatternVector of numbers (isbits, usable in a GPU kernel) and not a host Vector
+# made by Zygote's `map` over a PatternVector of thunks (#19).
+@testset "Zygote deferred cotangents" begin
+    x = collect(1.0:5.0)
+    for f in (x -> sum(x) .* 2.0, x -> (sum(x) .* 2.0) .* 3.0, x -> sum(x) .* sum(x), x -> max.(sum(x) .- 3.0, 0.0) .* 2.0)
+        g = Zygote.gradient(f, x)[1]
+        @test g isa PatternVector{Float64, FillPattern{Float64}}
+        @test isbits(g)
+        @test g ≈ Zygote.gradient(y -> f(collect(y)), x)[1]
+    end
+    # the pattern constructors receive deferred cotangents too: each pattern is linear in a, with these coefficients
+    for (n, P, c) in ((5, FillPattern, (1.0,)), (6, EvenOddPattern, (1.0, 2.0)), (6, PaddedEvenOddPattern, (1.0, 2.0, 3.0, 4.0)), (6, PaddedFillPattern, (1.0, 2.0, 3.0)), (6, InitialValuePattern, (1.0, 2.0)), (6, FinalValuePattern, (1.0, 2.0)))
+        f(a) = sum(PatternVector(n, P((c .* a)...))) .* 2.0
+        @test Zygote.gradient(f, 0.3)[1] ≈ 2 * sum(collect(PatternVector(n, P(c...))))
+    end
+end

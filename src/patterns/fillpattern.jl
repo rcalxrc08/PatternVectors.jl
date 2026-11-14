@@ -36,7 +36,8 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: F
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: FillPattern{M}} where {L, M} = FillPattern{promote_type(L, M)}
 
 function ChainRulesCore.rrule(::Type{FillPattern}, value)
-    function AbstractPattern_pb(Δapv)
+    function AbstractPattern_pb(Δ)
+        Δapv = unthunk(Δ)
         NoTangent(), Δapv.value
     end
     return FillPattern(value), AbstractPattern_pb

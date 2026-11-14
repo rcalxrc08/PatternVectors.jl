@@ -47,7 +47,8 @@ determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: ZeroPattern{L}, V <: E
 determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: FillPattern{L}, V <: EvenOddPattern{N}} where {L, N} = EvenOddPattern{promote_type(L, N)}
 
 function ChainRulesCore.rrule(::Type{EvenOddPattern}, value_odd, value_even)
-    function AbstractPattern_pb(Δapv)
+    function AbstractPattern_pb(Δ)
+        Δapv = unthunk(Δ)
         NoTangent(), Δapv.value_odd, Δapv.value_even
     end
     return EvenOddPattern(value_odd, value_even), AbstractPattern_pb
