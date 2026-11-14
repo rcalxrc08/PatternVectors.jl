@@ -45,7 +45,7 @@ The tests in "Nested mixed broadcasts" pin these rules, memory included. They fa
 
 ## Tests
 
-`test/runtests.jl` holds the patterns and the broadcasts, then runs `test_Zygote.jl`, `test_ReverseDiff.jl`, `test_Mooncake.jl` and `test_Enzyme.jl`. `cuda_tests.jl` needs a GPU and is not run on CI. Some Zygote cases are pinned with `@test_broken`.
+`test/runtests.jl` holds the patterns and the broadcasts, then runs `test_Zygote.jl`, `test_ReverseDiff.jl`, `test_Mooncake.jl` and `test_Enzyme.jl`. `cuda_tests.jl` needs a GPU and is not run on CI. Enzyme is capped at 0.13.218 in `test/Project.toml`: 0.13.219 (Enzyme_jll 0.0.307) aborts with an LLVM assertion on `sum(p .* p .+ 2)` (EvenOdd/InitialValue patterns; rewriting `materialize` only moved the crash to FinalValuePattern), EnzymeAD/Enzyme.jl#4053, #15. Lift the cap when a release fixes it. Some Zygote cases are pinned with `@test_broken`.
 
 Compare allocations with `@allocated` on a function called once before, inside a function: at the top level the globals inflate them.
 
