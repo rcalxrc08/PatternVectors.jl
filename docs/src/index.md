@@ -85,7 +85,8 @@ Main.DocumentationFigures.hero_stats()  # hide
 ## Similar packages
 
 - [FillArrays.jl](https://github.com/JuliaArrays/FillArrays.jl): lazy constant arrays (`Fill`, `Zeros`, `Ones`) of any
-  dimension, the multidimensional counterpart of `FillPattern` and `ZeroPattern`.
+  dimension, the multidimensional counterpart of `FillPattern` and `ZeroPattern`; broadcasts of functions of three
+  arguments (`muladd`, `ifelse`) materialize them, where a `PatternVector` stays one (see [Automatic differentiation](ad.md)).
 - [LazyArrays.jl](https://github.com/JuliaArrays/LazyArrays.jl): lazy concatenations and broadcasts; a padded vector
   can be written as `Vcat(x, Fill(a, n - 2), y)`, though broadcasts over it are not reduced to the distinct values and
   alternating layouts are not covered.
