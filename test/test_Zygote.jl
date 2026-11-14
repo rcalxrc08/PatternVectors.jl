@@ -1,4 +1,4 @@
-using PatternVectors, Test, ChainRulesCore, Zygote
+using PatternVectors, Test, ChainRulesCore, Zygote, LinearAlgebra
 
 @testset "Zygote EvenOddPattern" begin
     function f_av(x)
@@ -289,4 +289,37 @@ end
         f(a) = sum(PatternVector(n, P((c .* a)...))) .* 2.0
         @test Zygote.gradient(f, 0.3)[1] ≈ 2 * sum(collect(PatternVector(n, P(c...))))
     end
+end
+
+# dot: the weighted sums of quadratures (#21). Same gradients as sum(conj(w) .* y); the cotangent of the dense argument
+# is a PatternVector; constant integer weights get no cotangent.
+@testset "Zygote dot" begin
+    n = 11
+    y = collect(range(0.1, 1.1, length = n))
+    simpson = PatternVector(n, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1)))
+    g_dot = Zygote.gradient(a -> dot(simpson, exp.(a .* y)), 0.7)[1]
+    @test g_dot ≈ Zygote.gradient(a -> sum(simpson .* exp.(a .* y)), 0.7)[1]
+    @test Zygote.gradient(a -> dot(exp.(a .* y), simpson), 0.7)[1] ≈ g_dot
+    ȳ = Zygote.gradient(z -> dot(simpson, z), y)[1]
+    @test ȳ isa PatternVector && isbits(ȳ) && ȳ == collect(simpson)
+    @test Zygote.gradient(z -> dot(simpson, z) .* 2.0, y)[1] isa PatternVector  # deferred cotangent
+    # differentiable patterns, both orders and two PatternVectors
+    f_pv(a, b) = dot(PatternVector(n, EvenOddPattern(a, b)), y)
+    f_dense(a, b) = sum(PatternVector(n, EvenOddPattern(a, b)) .* y)
+    @test all(Zygote.gradient(f_pv, 0.3, 0.5) .≈ Zygote.gradient(f_dense, 0.3, 0.5))
+    @test all(Zygote.gradient((a, b) -> dot(y, PatternVector(n, EvenOddPattern(a, b))), 0.3, 0.5) .≈ Zygote.gradient(f_dense, 0.3, 0.5))
+    f_pp(a, b) = dot(PatternVector(n, PaddedFillPattern(a, b, a)), PatternVector(n, EvenOddPattern(b, a)))
+    f_pp_dense(a, b) = sum(collect(PatternVector(n, PaddedFillPattern(a, b, a))) .* collect(PatternVector(n, EvenOddPattern(b, a))))
+    @test all(Zygote.gradient(f_pp, 0.3, 0.5) .≈ Zygote.gradient(f_pp_dense, 0.3, 0.5))
+    # complex: dot conjugates its first argument
+    yc = y .+ im .* reverse(y)
+    @test Zygote.gradient(a -> real(dot(PatternVector(n, FillPattern(a)), yc)), 0.3)[1] ≈ Zygote.gradient(a -> real(sum(conj.(PatternVector(n, FillPattern(a))) .* yc)), 0.3)[1]
+    @test Zygote.gradient(z -> real(dot(simpson, z)), yc)[1] ≈ Zygote.gradient(z -> real(sum(simpson .* z)), yc)[1]
+    # the rule called directly (Zygote inlines it, and coverage would not count it)
+    val, pb = ChainRulesCore.rrule(dot, simpson, y)
+    @test val ≈ dot(collect(simpson), y)
+    _, w̄, ȳ_direct = pb(2.0)
+    @test w̄ isa NoTangent && unthunk(ȳ_direct) == 2 .* collect(simpson)
+    _, ȳ2, w̄2 = ChainRulesCore.rrule(dot, y, simpson)[2](ChainRulesCore.@thunk(2.0))
+    @test w̄2 isa NoTangent && unthunk(ȳ2) == 2 .* collect(simpson)
 end
