@@ -14,5 +14,6 @@ PatternVectors = {path = ".."}
 BenchmarkTools = "1"
 ForwardDiff = "0.10, 1"
 Mooncake = "0.5"
+PatternVectors = "0.1"
 Zygote = "0.7"
 julia = "1.11"

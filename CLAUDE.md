@@ -57,3 +57,7 @@ Compare allocations with `@allocated` on a function called once before, inside a
 ## Releasing
 
 Bump `version` in `Project.toml`, push to `main`, wait for CI, then register the commit on LocalRegistry with `LocalRegistry.register`. Commits on the registry are named `New version: PatternVectors vX.Y.Z`.
+
+## Sub-environments
+
+- **Compat of the package itself in the sub-environments** (`test/`, `docs/` and `benchmark/`, which load it through `[sources]` with a path): each has a `[compat]` entry for the package, so CompatHelper does not open PRs to add one (it has no option to skip a dependency). Bump these entries in the same commit as a breaking version bump, otherwise the local package no longer satisfies them and the environment fails to resolve.
