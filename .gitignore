@@ -17,3 +17,4 @@ benchmark/results.json
 benchmark/results.md
 
 docs/src/assets/figures/
+Manifest-v*.toml
