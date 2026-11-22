@@ -34,6 +34,9 @@ environment fails to resolve.
 
 ## Release
 
-Bump `version` in `Project.toml`, push to `main`, wait for CI, then register the commit on LocalRegistry with
-`LocalRegistry.register` (registry commits are named `New version: PatternVectors vX.Y.Z`); then tag `vX.Y.Z` and
-create the GitHub release (the private registry has no TagBot).
+Bump `version` in `Project.toml`, push to `main`, wait for CI, then register the commit on the private registry
+`localregistry` (`rcalxrc08/LocalRegistry`, not General) with `LocalRegistry.register`, from Julia 1.12, where
+LocalRegistry.jl is installed (`julia +1.12`; registry commits are named `New version: PatternVectors vX.Y.Z`, pushed to
+the registry's GitHub remote); then tag `vX.Y.Z` on the registered commit and create the GitHub release (the private
+registry has no TagBot). Of the author's packages only FinancialMonteCarlo and FinancialToolbox are in General;
+FinancialFFT and VibratoMonteCarlo are in `localregistry` too, FinancialCalibrator is not registered.
