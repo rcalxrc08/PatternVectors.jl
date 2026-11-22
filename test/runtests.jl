@@ -1,5 +1,6 @@
 using PatternVectors
 using Test, Dates, LazyArrays, SparseArrays
+include("context.jl")
 
 struct ZeroDimensionalVector{T} <: AbstractArray{T, 0}
     value::T

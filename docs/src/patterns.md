@@ -83,5 +83,5 @@ function pattern_to_vector_pullback(::Type{<:CyclicPattern{T}}, Δ, n) where {T}
 end
 ```
 
-The patterns in [`src/patterns`](https://github.com/rcalxrc08/PatternVectors.jl/tree/main/src/patterns) follow the
+The patterns in [`src/04_patterns`](https://github.com/rcalxrc08/PatternVectors.jl/tree/main/src/04_patterns) follow the
 same structure.

@@ -205,7 +205,7 @@ function pattern_to_vector_pullback(::Type{<:CyclicPattern{T}}, Δ, n) where {T}
 end
 ```
 
-The patterns in [`src/patterns`](src/patterns) follow the same structure.
+The patterns in [`src/04_patterns`](src/04_patterns) follow the same structure.
 
 ## Similar packages
 

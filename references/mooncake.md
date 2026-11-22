@@ -1,17 +1,17 @@
-# Mooncake support — working notes
+# Mooncake: the broadcast rule, its history and measurements
 
 Status as of 2026-11-02: the rule described here is on `main`, on top of 0.1.5 (Mooncake support was added on
 `support-mooncake`, the simplification on `mooncake-simplify`).
-Notes to resume the work in a later session.
+(Layer 3 reference: the rule, the alternatives evaluated and the measurements behind it.)
 
 ## What is in place
 
-- `src/rrules.jl` is the committed version (Zygote rules). The ChainRulesCore rrules must NOT be imported
+- `src/03_rrules/rrules.jl` is the committed version (Zygote rules). The ChainRulesCore rrules must NOT be imported
   into Mooncake with `@from_rrule`: their pullbacks expect an array-like cotangent and would force a dense one.
 - Mooncake needs no rule for `PatternVector` itself: its derived tangent is structural,
   `Tangent{(n = NoTangent, pattern = Tangent{pattern fields})}`, so gradients accumulate on the pattern fields.
   PatternVector-only gradients are O(1) in n (checked up to n = 10^18, 0 bytes allocated per call).
-- `src/broadcast.jl` (0.1.5): mixed and dense sub-expressions stay lazy and fuse into one call, scalar arithmetic
+- `src/02_broadcast/broadcast.jl` (0.1.5): mixed and dense sub-expressions stay lazy and fuse into one call, scalar arithmetic
   is folded once, and the mixed broadcast (`PatternMixtureArrayStyle`) materializes pattern-only sub-expressions,
   flattens the rest (`Broadcast.flatten`, lazy, no allocation) and calls
   `materialize_mixture(style, f, args...)`, the single hook for AD rules.
@@ -52,11 +52,11 @@ Notes to resume the work in a later session.
     cotangent while Mooncake needs the structural one); a custom Mooncake tangent type (documented for
     recursive types; it needs `lgetfield`/`_new_` rules and the whole tangent interface, i.e. more code);
     `pattern_to_vector_pullback` in the rule (one pass per pattern field, slower than the Jacobian reduction).
-- `src/broadcast.jl`: `get_style` unwraps nested `PatternMixtureArrayStyle` (they appear when mixing with
+- `src/02_broadcast/broadcast.jl`: `get_style` unwraps nested `PatternMixtureArrayStyle` (they appear when mixing with
   CuArrayStyle), so `materialize_mixture` always gets the innermost style.
 - `test/cuda_tests.jl` (needs a GPU, not run by `runtests.jl`): Zygote and Mooncake on CuArrays. Run it in an
   environment with PatternVectors (dev), CUDA, Zygote, ChainRulesCore, BenchmarkTools, Mooncake, Statistics.
-- `src/patternvector.jl`: `Core.kwcall` method forwarding `sum(x; dims = :)` to the positional,
+- `src/01_vector/patternvector.jl`: `Core.kwcall` method forwarding `sum(x; dims = :)` to the positional,
   pattern-specialized `sum` (Zygote's `unbroadcast` calls the keyword form, which was O(n)).
   `ZeroPattern` got its O(1) `sum`.
 - Tests: `test/runtests.jl` (core, no AD) includes `test/test_Zygote.jl` (Zygote + direct ChainRules rule calls)
@@ -174,7 +174,7 @@ Enzyme 0.13 differentiates PatternVector structurally, like Mooncake without its
 
 ## Other open points
 
-- `rrule(::typeof(sum), x::AbstractArray{T,1})` in `src/rrules.jl` is type piracy (applies to every vector
+- `rrule(::typeof(sum), x::AbstractArray{T,1})` in `src/03_rrules/rrules.jl` is type piracy (applies to every vector
   under Zygote); restricting it to `PatternVector` would be safer.
 - `Project.toml` allows `Mooncake = "0.5"`, but `Mooncake.Nfwd` (used by the extension) exists only since
   0.5.25: the lower bound should be raised.

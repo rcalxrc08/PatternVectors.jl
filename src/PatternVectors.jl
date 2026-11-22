@@ -1,16 +1,16 @@
 module PatternVectors
 using ChainRulesCore
-include("patternvector.jl")
-include("broadcast.jl")
-include("rrules.jl")
-include("patterns/zeropattern.jl")
-include("patterns/fillpattern.jl")
-include("patterns/evenoddpattern.jl")
-include("patterns/initialvaluepattern.jl")
-include("patterns/finalvaluepattern.jl")
-include("patterns/paddedfillpattern.jl")
-include("patterns/paddedevenoddpattern.jl")
-include("linearalgebra.jl")
+include("01_vector/patternvector.jl")
+include("02_broadcast/broadcast.jl")
+include("03_rrules/rrules.jl")
+include("04_patterns/zeropattern.jl")
+include("04_patterns/fillpattern.jl")
+include("04_patterns/evenoddpattern.jl")
+include("04_patterns/initialvaluepattern.jl")
+include("04_patterns/finalvaluepattern.jl")
+include("04_patterns/paddedfillpattern.jl")
+include("04_patterns/paddedevenoddpattern.jl")
+include("05_linearalgebra/linearalgebra.jl")
 
 export PatternVector, ZeroPattern, FillPattern, EvenOddPattern, PaddedEvenOddPattern, InitialValuePattern, FinalValuePattern, PaddedFillPattern
 
