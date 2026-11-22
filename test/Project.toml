@@ -23,5 +23,5 @@ Mooncake = "0.5"
 PatternVectors = "0.1"
 ReverseDiff = "1.18"
 # 0.7.18: the deferred cotangents (Thunks) of 0.7.17+, which the rules must unthunk (#19), and its fused GPU broadcasts
-Zygote = "0.7.18"
+Zygote = "0.7.19"
 julia = "1.11"
