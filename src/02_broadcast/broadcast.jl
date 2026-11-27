@@ -1,33 +1,33 @@
 #Broacasting over PatternVector
 abstract type AbstractArrayStylePatternVector <: Broadcast.AbstractArrayStyle{1} end
 # Pattern is stored inside the style, to allow easier mixture patterns dispatching
-struct ArrayStylePatternVector{P<:AbstractPattern} <: AbstractArrayStylePatternVector end
+struct ArrayStylePatternVector{P <: AbstractPattern} <: AbstractArrayStylePatternVector end
 # Main link between PatternVector and its Broadcast style, unfortunately we are carrying the element type too.
-Base.BroadcastStyle(::Type{<:PatternVector{T,P}}) where {T,P<:AbstractPattern} = ArrayStylePatternVector{P}()
+Base.BroadcastStyle(::Type{<:PatternVector{T, P}}) where {T, P <: AbstractPattern} = ArrayStylePatternVector{P}()
 # Mixture pattern determination for pattern with Unknown
-determine_mixed_pattern(::Type{T}, ::Type{UnknownPattern}) where {T<:AbstractPattern} = T
-determine_mixed_pattern(::Type{UnknownPattern}, ::Type{T}) where {T<:AbstractPattern} = T
+determine_mixed_pattern(::Type{T}, ::Type{UnknownPattern}) where {T <: AbstractPattern} = T
+determine_mixed_pattern(::Type{UnknownPattern}, ::Type{T}) where {T <: AbstractPattern} = T
 # Default mixture pattern determination returns Unknown
-determine_mixed_pattern(::Type{T}, ::Type{V}) where {T<:AbstractPattern,V<:AbstractPattern} = UnknownPattern
+determine_mixed_pattern(::Type{T}, ::Type{V}) where {T <: AbstractPattern, V <: AbstractPattern} = UnknownPattern
 
 # Defer mixture pattern determination to handle symmetric cases
-function determine_mixed_pattern_defer(::Type{T}, ::Type{V}) where {T<:AbstractPattern,V<:AbstractPattern}
+function determine_mixed_pattern_defer(::Type{T}, ::Type{V}) where {T <: AbstractPattern, V <: AbstractPattern}
     first = determine_mixed_pattern(T, V)
     second = determine_mixed_pattern(V, T)
     return determine_mixed_pattern(first, second)
 end
 
 # Mixture pattern determination for two ArrayStylePatternVector
-Base.BroadcastStyle(::ArrayStylePatternVector{T}, ::ArrayStylePatternVector{V}) where {T<:AbstractPattern,V<:AbstractPattern} = ArrayStylePatternVector{determine_mixed_pattern_defer(T, V)}()
+Base.BroadcastStyle(::ArrayStylePatternVector{T}, ::ArrayStylePatternVector{V}) where {T <: AbstractPattern, V <: AbstractPattern} = ArrayStylePatternVector{determine_mixed_pattern_defer(T, V)}()
 
 # Broacasting over PatternVector - flattening helpers
 flat_index(x, _) = x
-flat_index(x::AbstractArray{T,0}, _) where {T} = x[]
+flat_index(x::AbstractArray{T, 0}, _) where {T} = x[]
 flat_index(x::Base.RefValue, _) = x.x
 flat_index(x::PatternVector, ind) = @views @inbounds x[ind]
 
 # Dispatch materialization based on pattern type
-function Base.materialize(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVector{P},Nothing,<:F,<:R}) where {F,R,P<:AbstractPattern{T}} where {T}
+function Base.materialize(bc::Base.Broadcast.Broadcasted{ArrayStylePatternVector{P}, Nothing, <:F, <:R}) where {F, R, P <: AbstractPattern{T}} where {T}
     length_first_axes_result, pattern = materialize_pattern(bc)
     return PatternVector(length_first_axes_result, pattern)
 end
@@ -38,31 +38,32 @@ Base.BroadcastStyle(::ArrayStylePatternVector, ::Base.Broadcast.Style{Tuple}) = 
 # Determines the broadcast style when combining ArrayStylePatternVector with a DefaultArrayStyle of any dimension.
 function Base.BroadcastStyle(a::ArrayStylePatternVector, ::Broadcast.DefaultArrayStyle{N}) where {N}
     if (N > 0)
-        return PatternMixtureArrayStyle{N,Broadcast.DefaultArrayStyle{N}}()
+        return PatternMixtureArrayStyle{N, Broadcast.DefaultArrayStyle{N}}()
     end
     return a
 end
 
 # Determines the broadcast style when combining ArrayStylePatternVector with a general AbstractArrayStyle of any dimension.
-function Base.BroadcastStyle(a::ArrayStylePatternVector, ::T) where {T<:Broadcast.AbstractArrayStyle{N}} where {N}
-    if (N > 0)
-        return PatternMixtureArrayStyle{N,T}()
+# N is Any for Broadcast.ArrayStyle{A}, the style of an array type that does not fix its dimension (Reactant's arrays).
+function Base.BroadcastStyle(a::ArrayStylePatternVector, ::T) where {T <: Broadcast.AbstractArrayStyle{N}} where {N}
+    if !(N isa Integer) || N > 0
+        return PatternMixtureArrayStyle{N, T}()
     end
     return Base.BroadcastStyle(a, Broadcast.DefaultArrayStyle{0}())
 end
 
 # Materializes a broadcasted object if its style is ArrayStylePatternVector.
-function materialize_if_needed(bc::Base.Broadcast.Broadcasted{T,Nothing,<:F,<:R}) where {T<:ArrayStylePatternVector,F,R}
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{T, Nothing, <:F, <:R}) where {T <: ArrayStylePatternVector, F, R}
     return Base.materialize(bc)
 end
 
 # Exclude Unknown broadcast style, using the second style as the fallback.
-function exclude_unknown_style_if_possible(::Base.Broadcast.Unknown, style_1::V, style_2::U) where {V<:Base.Broadcast.BroadcastStyle,U<:Base.Broadcast.BroadcastStyle}
+function exclude_unknown_style_if_possible(::Base.Broadcast.Unknown, style_1::V, style_2::U) where {V <: Base.Broadcast.BroadcastStyle, U <: Base.Broadcast.BroadcastStyle}
     Base.BroadcastStyle(style_2, style_1)
 end
 
 # Prefer the first style if it is not Unknown.
-function exclude_unknown_style_if_possible(first::L, ::V, ::U) where {L<:Base.Broadcast.BroadcastStyle,V<:Base.Broadcast.BroadcastStyle,U<:Base.Broadcast.BroadcastStyle}
+function exclude_unknown_style_if_possible(first::L, ::V, ::U) where {L <: Base.Broadcast.BroadcastStyle, V <: Base.Broadcast.BroadcastStyle, U <: Base.Broadcast.BroadcastStyle}
     first
 end
 
@@ -71,16 +72,16 @@ end
 # Represents a broadcast style that mixes two other broadcast styles.
 abstract type AbstractPatternMixtureArrayStyle{N} <: Broadcast.AbstractArrayStyle{N} end
 
-struct PatternMixtureArrayStyle{N,T} <: AbstractPatternMixtureArrayStyle{N}
+struct PatternMixtureArrayStyle{N, T} <: AbstractPatternMixtureArrayStyle{N}
     # Construct from a single broadcast style.
-    function PatternMixtureArrayStyle{N,V}() where {V<:Broadcast.AbstractArrayStyle{N}} where {N}
-        return new{N,V}()
+    function PatternMixtureArrayStyle{N, V}() where {V <: Broadcast.AbstractArrayStyle{N}} where {N}
+        return new{N, V}()
     end
-    function PatternMixtureArrayStyle{V}() where {V<:Broadcast.AbstractArrayStyle{N}} where {N}
-        return new{N,V}()
+    function PatternMixtureArrayStyle{V}() where {V <: Broadcast.AbstractArrayStyle{N}} where {N}
+        return new{N, V}()
     end
     # Construct by mixing two broadcast styles, resolving Unknown if possible.
-    function PatternMixtureArrayStyle(style_1::V, style_2::U) where {V<:Base.Broadcast.BroadcastStyle,U<:Base.Broadcast.BroadcastStyle}
+    function PatternMixtureArrayStyle(style_1::V, style_2::U) where {V <: Base.Broadcast.BroadcastStyle, U <: Base.Broadcast.BroadcastStyle}
         style_implied_1 = Base.BroadcastStyle(style_1, style_2)
         style = exclude_unknown_style_if_possible(style_implied_1, style_1, style_2)
         return PatternMixtureArrayStyle{typeof(style)}()
@@ -88,7 +89,7 @@ struct PatternMixtureArrayStyle{N,T} <: AbstractPatternMixtureArrayStyle{N}
 end
 
 # Innermost wrapped style: mixing with some styles (e.g. CuArrayStyle) can nest PatternMixtureArrayStyle.
-function get_style(::PatternMixtureArrayStyle{N,T}) where {T,N}
+function get_style(::PatternMixtureArrayStyle{N, T}) where {T, N}
     return unwrap_mixture_style(T())
 end
 unwrap_mixture_style(style::PatternMixtureArrayStyle) = get_style(style)
@@ -112,19 +113,19 @@ function Base.BroadcastStyle(a::PatternMixtureArrayStyle, b::PatternMixtureArray
 end
 
 # A mixed sub-expression stays lazy, so that it fuses with the outer broadcast: only its pure pattern parts are evaluated.
-function materialize_if_needed(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N,T},Nothing,<:F,<:R}) where {N,T,F,R}
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N, T}, Nothing, <:F, <:R}) where {N, T, F, R}
     return Base.Broadcast.Broadcasted(get_style(bc.style), bc.f, map(materialize_if_needed, bc.args))
 end
 
 # The same for a dense sub-expression, which can still contain scalar ones.
-function materialize_if_needed(bc::Base.Broadcast.Broadcasted{<:Broadcast.AbstractArrayStyle,Nothing,<:F,<:R}) where {F,R}
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{<:Broadcast.AbstractArrayStyle, Nothing, <:F, <:R}) where {F, R}
     return Base.Broadcast.Broadcasted(bc.style, bc.f, map(materialize_if_needed, bc.args))
 end
 
 # Plain arithmetic on scalars is evaluated once, otherwise Broadcast.flatten allocates for every element.
 # Only arithmetic: any other function could be impure, like rand(), and it has to stay element by element.
-const ScalarArithmetic = Union{typeof(+),typeof(-),typeof(*),typeof(/),typeof(^)}
-function materialize_if_needed(bc::Base.Broadcast.Broadcasted{S,Nothing,<:ScalarArithmetic,<:R}) where {S<:Broadcast.AbstractArrayStyle{0},R}
+const ScalarArithmetic = Union{typeof(+), typeof(-), typeof(*), typeof(/), typeof(^)}
+function materialize_if_needed(bc::Base.Broadcast.Broadcasted{S, Nothing, <:ScalarArithmetic, <:R}) where {S <: Broadcast.AbstractArrayStyle{0}, R}
     args = map(materialize_if_needed, bc.args)
     bc_mat = Base.Broadcast.Broadcasted(bc.style, bc.f, args)
     return any(arg -> arg isa Base.Broadcast.Broadcasted, args) ? bc_mat : Base.materialize(bc_mat)
@@ -136,7 +137,7 @@ function materialize_if_needed(bc)
 end
 
 # Materialize a broadcasted object with PatternMixtureArrayStyle, materializing all arguments as needed.
-function Base.materialize(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N,T},Nothing,<:F,<:R}) where {N,T,F,R}
+function Base.materialize(bc::Base.Broadcast.Broadcasted{PatternMixtureArrayStyle{N, T}, Nothing, <:F, <:R}) where {N, T, F, R}
     # map (not broadcast) over the argument tuple: it stays inferable for nested broadcasts
     mat_args = map(materialize_if_needed, bc.args)
     bc_flat = Broadcast.flatten(Base.Broadcast.Broadcasted(get_style(bc.style), bc.f, mat_args))

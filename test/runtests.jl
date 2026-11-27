@@ -550,6 +550,34 @@ end
     @test @inferred(f3(pv, pv2, X)) ≈ f3(collect(pv), collect(pv2), X)
 end
 
+@testset "Indexing with any AbstractRange (Base.OneTo, step ranges)" begin
+    for p in (EvenOddPattern(1.0, 2.0), FillPattern(5.0), InitialValuePattern(1.0, 2.0), FinalValuePattern(1.0, 2.0), PaddedFillPattern(1.0, 2.0, 3.0), PaddedEvenOddPattern(1.0, 2.0, 3.0, 4.0))
+        v = PatternVector(9, p)
+        @test v[Base.OneTo(5)] isa PatternVector
+        @test collect(v[Base.OneTo(5)]) == collect(v)[1:5]
+        @test collect(v[2:2:8]) == collect(v)[2:2:8]
+    end
+end
+
+# An array whose broadcast style is Broadcast.ArrayStyle{A}, an AbstractArrayStyle{Any} (the style of Reactant's arrays)
+struct ArrayStyleVector{T} <: AbstractVector{T}
+    data::Vector{T}
+end
+Base.size(x::ArrayStyleVector) = size(x.data)
+Base.getindex(x::ArrayStyleVector, i::Int) = x.data[i]
+Base.setindex!(x::ArrayStyleVector, v, i::Int) = (x.data[i] = v)
+Base.BroadcastStyle(::Type{<:ArrayStyleVector}) = Broadcast.ArrayStyle{ArrayStyleVector}()
+Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{ArrayStyleVector}}, ::Type{T}) where {T} = ArrayStyleVector(similar(Vector{T}, axes(bc)))
+
+@testset "Broadcast with an ArrayStyle{A} array" begin
+    pv = PatternVector(6, PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0))
+    y = ArrayStyleVector(collect(1.0:6.0))
+    @test pv .* y isa ArrayStyleVector
+    @test pv .* y == collect(pv) .* collect(y)
+    @test y .* pv == collect(y) .* collect(pv)
+    @test exp.(pv) .+ 2 .* y ≈ exp.(collect(pv)) .+ 2 .* collect(y)
+end
+
 include("test_Zygote.jl")
 include("test_Mooncake.jl")
 include("test_ReverseDiff.jl")

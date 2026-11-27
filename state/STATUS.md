@@ -1,7 +1,7 @@
 # Status
 
 _What is in flight. Layer 4: volatile, rewritten freely; GitHub issues are the source of truth for tasks, this file is
-the index an agent reads first._ Updated: 2026-11-22
+the index an agent reads first._ Updated: 2026-11-27
 
 ## Current focus
 
@@ -13,6 +13,7 @@ branch is merged.
 | Item | Branch | Issue | Next step |
 |:--|:--|:--|:--|
 | Layered context | `context-layers` | #22 | review, merge, push |
+| Range indexing with `Base.OneTo` (`first(el)`, not `el.start`) and broadcast with a `Broadcast.ArrayStyle{A}` array (`N = Any`), found by the Reactant study | `reactant-range-style` | #24 | full suite green (808/808): merge and push; then the Reactant extension of #24 |
 
 ## Known issues
 

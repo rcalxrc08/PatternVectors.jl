@@ -63,7 +63,7 @@ end
 
 # Defer get_index to pattern
 function Base.getindex(x::PatternVector{V, P}, el::AbstractRange{T}) where {T <: Int, V, P}
-    @boundscheck (1 <= el.start <= x.n) || throw(BoundsError(x, el.start))
+    @boundscheck (1 <= first(el) <= x.n) || throw(BoundsError(x, first(el)))
     @boundscheck (1 <= last(el) <= x.n) || throw(BoundsError(x, last(el)))
     n, pattern = getindex_pattern_range(x.pattern, el, x.n)
     return PatternVector(n, pattern)

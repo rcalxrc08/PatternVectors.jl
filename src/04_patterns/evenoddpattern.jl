@@ -24,7 +24,7 @@ function getindex_pattern_range(x::P, el::AbstractRange{T}, n::Int) where {T <: 
     new_len = length(el)
     minimum_size = pattern_minimum_size(x)
     (minimum_size <= new_len) || throw(DomainError(new_len, "Trying to getindex with an AbstractRange of length $new_len. Provided length must be greater or equal to $minimum_size."))
-    first_idx = el.start
+    first_idx = first(el)
     odd_value = getindex_pattern(x, first_idx, n)
     even_value = getindex_pattern(x, first_idx + step(el), n)
     return new_len, EvenOddPattern(odd_value, even_value)

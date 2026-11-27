@@ -7,7 +7,8 @@ _The two styles and the promises of `materialize_if_needed`._ (Layer 3 reference
 - `ArrayStylePatternVector{P}`: PatternVectors and scalars only. `materialize_pattern` evaluates the function on the
   pattern values and returns a `PatternVector`.
 - `PatternMixtureArrayStyle{N, T}`: a PatternVector mixed with a dense array of style `T` (`Array`, `CuArray`, …). The
-  result has the type of the dense array.
+  result has the type of the dense array. `N` is `Any` when `T` is `Broadcast.ArrayStyle{A}` (an array type that does
+  not fix its dimension, e.g. Reactant's `ConcreteRArray`).
 
 A mixed broadcast goes through `materialize_if_needed` on its arguments, recursively, then through
 `Broadcast.flatten` and `materialize_mixture(style, f, args...)`, the single hook for AD rules.
