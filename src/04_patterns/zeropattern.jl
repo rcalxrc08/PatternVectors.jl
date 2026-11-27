@@ -14,7 +14,7 @@ end
 
 pattern_minimum_size(::ZeroPattern) = 1 # COV_EXCL_LINE
 
-function getindex_pattern(::ZeroPattern{T}, ::Int, ::Int) where {T}
+function getindex_pattern(::ZeroPattern{T}, _, ::Int) where {T}
     zero(T)
 end
 

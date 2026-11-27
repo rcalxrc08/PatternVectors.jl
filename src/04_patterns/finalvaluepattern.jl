@@ -15,7 +15,7 @@ end
 
 pattern_minimum_size(x::FinalValuePattern) = 2 # COV_EXCL_LINE
 
-function getindex_pattern(x::FinalValuePattern, ind::Int, n::Int)
+function getindex_pattern(x::FinalValuePattern, ind, n::Int)
     ifelse(ind == n, x.final_value, x.other_value)
 end
 

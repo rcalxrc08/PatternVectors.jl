@@ -19,7 +19,7 @@ end
 
 pattern_minimum_size(::PaddedEvenOddPattern) = 4 # COV_EXCL_LINE
 
-function getindex_pattern(x::PaddedEvenOddPattern, ind::Int, n::Int)
+function getindex_pattern(x::PaddedEvenOddPattern, ind, n::Int)
     ifelse(ind == 1, x.bound_initial_value, ifelse(ind == n, x.bound_final_value, ifelse(isodd(ind), x.value_odd, x.value_even)))
 end
 

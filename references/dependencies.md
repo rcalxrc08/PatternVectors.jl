@@ -6,6 +6,7 @@ _Why each dependency exists, hard or weak, and its compat floor._ (Layer 3 refer
 |:--|:--|:--|:--|
 | `ChainRulesCore` | hard | the Zygote rules (stages 03, 04, 05) | 1 |
 | `LinearAlgebra` | hard | `dot` | 1 |
+| `Reactant` | weak (`ReactantExt`) | PatternVectors in XLA programs without their `n` values | `0.2.309` (the version tested, with Enzyme 0.13.220) |
 | `Mooncake` | weak (`MooncakeExt`) | the mixed-broadcast rule | `0.5`; the extension uses `Mooncake.Nfwd`, which exists since 0.5.25: the floor should be raised (`state/STATUS.md`) |
 | `ReverseDiff` | weak (`ReverseDiffExt`) | broadcast style precedence, `dot` recording | 1 (the style fix targets 1.18's `TrackedStyle`) |
 | `SparseArrays` | weak (`SparseArraysExt`) | promote to the sparse style | stdlib |

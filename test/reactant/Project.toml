@@ -1,0 +1,14 @@
+[deps]
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PatternVectors = "92638b5e-77be-42fd-8598-99573a47aaa0"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+PatternVectors = {path = "../.."}
+
+[compat]
+Enzyme = "0.13.220"
+PatternVectors = "0.1"
+Reactant = "0.2.309"

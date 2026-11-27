@@ -61,3 +61,17 @@ the reference each entry points to.
 - **Consequences:** every source file belongs to a stage folder and its contract; `MOONCAKE_NOTES.md` became
   `references/mooncake.md`.
 - **Status:** active
+
+## D-008 (2026-11-27) PatternVectors reach XLA as structure, never as n values
+
+- **Decision:** `ReactantExt` hands Reactant a PatternVector built from fills, concatenations and broadcasts of its
+  pattern values (`traced_array`), numbers behind an `optimization_barrier`; `getindex_pattern` takes any index type
+  (a traced one included).
+- **Why:** Reactant's default turns any unknown array into a dense constant of its `n` values, which defeats the
+  package; Reactant (below 1024 elements) and XLA (concatenations, comparisons with an iota) fold constant
+  expressions back into one unless the scalars are opaque (`reactant.md`). Compile time stays constant in `n`
+  (0.6 s against 15-35 s for a dense constant at 4·10^6), run time equal on CUDA.
+- **Consequences:** a new pattern needs a `traced_array` method; `test/reactant/runtests.jl` fails when a constant of
+  `n` elements appears. On XLA CPU the structured weights of a reduction run 2-5x slower than a dense constant
+  (YNNPACK fusion), accepted for the compile time and the program size.
+- **Status:** active

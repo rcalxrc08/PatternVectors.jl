@@ -16,7 +16,7 @@ end
 
 pattern_minimum_size(::PaddedFillPattern) = 3 # COV_EXCL_LINE
 
-function getindex_pattern(x::PaddedFillPattern, ind::Int, n::Int)
+function getindex_pattern(x::PaddedFillPattern, ind, n::Int)
     ifelse(ind == 1, x.bound_initial_value, ifelse(ind == n, x.bound_final_value, x.value))
 end
 

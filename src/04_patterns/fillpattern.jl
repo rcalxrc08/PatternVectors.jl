@@ -13,7 +13,7 @@ end
 
 pattern_minimum_size(::FillPattern) = 1 # COV_EXCL_LINE
 
-function getindex_pattern(x::FillPattern, _::Int, ::Int)
+function getindex_pattern(x::FillPattern, _, ::Int)
     x.value
 end
 function getindex_pattern_range(x::FillPattern, el::AbstractRange{T}, ::Int) where {T <: Int}

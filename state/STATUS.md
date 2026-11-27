@@ -13,7 +13,7 @@ branch is merged.
 | Item | Branch | Issue | Next step |
 |:--|:--|:--|:--|
 | Layered context | `context-layers` | #22 | review, merge, push |
-| Range indexing with `Base.OneTo` (`first(el)`, not `el.start`) and broadcast with a `Broadcast.ArrayStyle{A}` array (`N = Any`), found by the Reactant study | `reactant-range-style` | #24 | full suite green (808/808): merge and push; then the Reactant extension of #24 |
+| Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `reactant-ext` | #24 | local tests green (Windows CPU); review, merge, push; then a pattern-aware `dot` for traced arrays (strided sums, no weight array) |
 
 ## Known issues
 

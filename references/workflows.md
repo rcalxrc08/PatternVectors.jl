@@ -15,6 +15,7 @@ _How to run, test, document and release._ (Layer 3 reference.)
 ```bash
 julia --project -e 'import Pkg; Pkg.test()'             # test/runtests.jl, then the AD backends
 julia --project=benchmark benchmark/runbenchmarks.jl
+julia --project=test/reactant -e 'import Pkg; Pkg.instantiate(); include("test/reactant/runtests.jl")'  # Reactant (XLA), local only; REACTANT_BACKEND=cuda on Linux
 julia --project=docs docs/make.jl                      # Documenter site, into docs/build
 julia -e 'using JuliaFormatter; format(".")'            # uses .JuliaFormatter.toml
 ```
@@ -27,7 +28,7 @@ artifact and job summary. `DeployPage.yml`: the docs through the Pages artifact 
 
 ## Sub-environments
 
-`test/`, `docs/` and `benchmark/` load the package through `[sources]` with a path, and each has a `[compat]` entry for
+`test/`, `test/reactant/`, `docs/` and `benchmark/` load the package through `[sources]` with a path, and each has a `[compat]` entry for
 the package itself, so CompatHelper does not open PRs to add one (it has no option to skip a dependency). Bump these
 entries in the same commit as a breaking version bump, otherwise the local package no longer satisfies them and the
 environment fails to resolve.

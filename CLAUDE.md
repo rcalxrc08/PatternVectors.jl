@@ -22,7 +22,7 @@ Startup: read `state/STATUS.md`, then route the task through `CONTEXT.md`. Runti
 for this project (`kaimon.toml` pins the Julia); each contract's Verify table lists the checks to run after a change.
 
 Map: `src/PatternVectors.jl` includes the stages in order, `01_vector` → `02_broadcast` → `03_rrules` → `04_patterns` →
-`05_linearalgebra`; `ext/` the Mooncake, ReverseDiff and SparseArrays extensions; `test/` the suite; `docs/` the
+`05_linearalgebra`; `ext/` the Mooncake, Reactant, ReverseDiff and SparseArrays extensions; `test/` the suite (`test/reactant/` local Reactant tests); `docs/` the
 Documenter site; `benchmark/` the CI benchmark suite; `etc/` the README benchmark script and the logo.
 
 Rules for every change (details in `references/conventions.md`):
