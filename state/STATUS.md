@@ -13,7 +13,7 @@ branch is merged.
 | Item | Branch | Issue | Next step |
 |:--|:--|:--|:--|
 | Layered context | `context-layers` | #22 | review, merge, push |
-| Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `reactant-ext` | #24 | local tests green (Windows CPU); review, merge, push; then a pattern-aware `dot` for traced arrays (strided sums, no weight array) |
+| Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `main` (bfb9ab9) | #24 | merged; next a pattern-aware `dot` for traced arrays (strided sums, no weight array) |
 
 ## Known issues
 
