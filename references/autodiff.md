@@ -33,7 +33,31 @@ Mooncake rule has its own reference, `mooncake.md`.
   on the GPU and runs 1.2-1.5x faster there (n = 10^6), about the same on the CPU.
 - In FinancialFFT (Lewis) and VibratoMonteCarlo (trapezoid) switching `sum(w .* y)` to `dot` was measured neutral (±4%,
   same memory; Lewis's 10^4-node sum is small next to the characteristic exponent, and Vibrato does not use Zygote),
-  so they keep `sum`.
+  so they keep `sum`. That was before the lazy reduction below: to be measured again.
+- With a dense array `dot` is the reduction of the lazy broadcast `dot.(x, y)` in the style of the dense array
+  (`reduce_dot`, D-009): no array of the `n` products. The unwrapped style matters: Base's reduction of a
+  `PatternMixtureArrayStyle` broadcast indexes element by element (scalar indexing of a `CuArray`), while the
+  `CuArrayStyle` one is GPUArrays' `mapreduce` kernel. Mooncake gets a rule on `pattern_dot` (`ext/MooncakeExt.jl`):
+  without it Mooncake differentiates the reduction element by element, 20-50% slower on the CPU, and fails on
+  GPUArrays' `mapreduce`.
+- Measured 2026-11-28, `dot(w, exp.(y))` and its gradient w.r.t. `y` at n = 10^6 + 1 (EvenOdd, PaddedEvenOdd,
+  InitialValue; i7-8550U, MX150, Float64 CPU, Float32 GPU; one process per variant, back to back), before → after:
+
+  | backend | before | after |
+  |:--|--:|--:|
+  | CPU value | 2.8 ms, 8 MB | 0.39-0.72 ms, 0 B |
+  | CPU Zygote | 12.1-12.7 ms, 24 MB | 10.3-12.6 ms, 16 MB |
+  | CPU Mooncake | 46-48 ms, 40 MB | 41.5-44 ms, 24 MB |
+  | CPU Mooncake, w.r.t. the pattern values | 46.3 ms | 40.4 ms |
+  | CPU Enzyme reverse | 40-42 ms, 40 MB | 30.5-35 ms, 24 MB |
+  | CPU Enzyme forward, ForwardDiff (one direction) | 16-22 ms, 32 MB | 11.4-16 ms, 16 MB |
+  | CPU ReverseDiff (records its own `dot`) | 31-32 ms | 31-32 ms |
+  | CUDA value (interleaved medians; 10^4 / 10^6 / 4·10^6) | 0.14 / 0.45 / 1.34 ms | 0.12 / 0.20-0.25 / 0.46 ms |
+  | CUDA Zygote | 0.80-1.14 ms | 0.57-0.61 ms |
+  | CUDA Mooncake | 2.90-2.95 ms | 2.22-2.32 ms |
+  | Reactant CPU and CUDA, value and Enzyme reverse | 1.8-8.6 ms | unchanged |
+
+  The Fill pattern keeps `value * sum(y)`; two PatternVectors keep the broadcast on the pattern values.
 
 ## Enzyme (no extension)
 

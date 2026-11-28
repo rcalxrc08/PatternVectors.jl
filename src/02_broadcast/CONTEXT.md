@@ -17,7 +17,8 @@ on the dense array's device.
 - Pattern-only broadcasts of different patterns combine through `determine_mixed_pattern_defer`; nested
   `PatternMixtureArrayStyle`s (with `CuArrayStyle`) are unwrapped by `get_style`, so `materialize_mixture` always gets
   the innermost style.
-- `materialize_mixture(style, f, args...)` stays the single hook for AD rules: any new path goes through it.
+- `materialize_mixture(style, f, args...)` stays the single hook for the AD rules of broadcasts: any new broadcast path
+  goes through it (`dot`, a reduction, has its own Mooncake rule on `pattern_dot`, D-009).
 - In-place broadcasts (`d .= …`) do not go through this path.
 
 ## Outputs

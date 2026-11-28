@@ -6,13 +6,13 @@ How the suite is organized, how to run a part of it, what CI runs.
 
 | Load | Why |
 |:--|:--|
-| `runtests.jl` | the patterns, the broadcasts ("Nested mixed broadcasts" pins the memory), `dot`; then includes the AD files |
+| `runtests.jl` | the patterns, the broadcasts ("Nested mixed broadcasts" pins the memory), `dot` (every pattern with ranges, views, integer and complex arrays; no array of the products); then includes the AD files |
 | `test_Zygote.jl` | Zygote per pattern, the ChainRules pullbacks called directly, keyword `sum`, deferred cotangents, `dot` |
-| `test_Mooncake.jl` | structural tangent, the mixed-broadcast rule (also with a non-default style, Int8 weights, `ZeroPattern`), allocations |
+| `test_Mooncake.jl` | structural tangent, the mixed-broadcast rule (also with a non-default style, Int8 weights, `ZeroPattern`), allocations, the `dot` rule |
 | `test_ReverseDiff.jl` | broadcast style, gradients, `dot` |
-| `test_Enzyme.jl` | Enzyme vs Zygote (scalars), vs Mooncake (pattern gradients), size independence |
-| `cuda_tests.jl` | Zygote and Mooncake on `CuArray`s; needs a GPU, not run by `runtests.jl` |
-| `reactant/runtests.jl` | Reactant (XLA): values against plain Julia, no constant of `n` values in the program, traced pattern values, Enzyme; own environment, not run by `runtests.jl` nor on CI |
+| `test_Enzyme.jl` | Enzyme vs Zygote (scalars), vs Mooncake (pattern gradients), size independence, `dot` (reverse and forward) |
+| `cuda_tests.jl` | Zygote and Mooncake on `CuArray`s, `dot` (every pattern, views, gradients); needs a GPU, not run by `runtests.jl` |
+| `reactant/runtests.jl` | Reactant (XLA): values against plain Julia, no constant of `n` values in the program, `dot` with constant and integer weights, traced pattern values, Enzyme; own environment, not run by `runtests.jl` nor on CI |
 | `context.jl` | the check that keeps the context layers in sync with the code |
 | `references/testing.md` | what each file checks, reference values, local versus CI differences |
 | `references/workflows.md` | commands, CI matrix, sub-environments |

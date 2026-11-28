@@ -81,4 +81,28 @@ function unbroadcast(x, Δ)
     return reshape(sum(Base.materialize(Δ); dims), size(x))
 end
 
+# Rule for dot(PatternVector, dense array), hooked on pattern_dot (dot of a dense array and a PatternVector reaches it
+# too). Without it Mooncake differentiates the lazy reduction of pattern_dot element by element: slower on CPU, and it
+# cannot differentiate GPUArrays' mapreduce. The cotangent of the dense array is x .* Δ, one broadcast; that of the
+# pattern values the reduction of cotangent! with the elementwise cotangent y .* Δ. Real floats only (no conj);
+# constant weights (integer patterns, e.g. Simpson's) get no cotangent.
+function Mooncake._is_primitive(::Type{DefaultCtx}, ::Type{<:ReverseMode}, ::Type{Sig}) where {Sig <: Tuple{typeof(PatternVectors.pattern_dot), Any, Any}}
+    isconcretetype(Sig) || return false
+    _, X, Y = fieldtypes(Sig)
+    (X <: PatternVector && arg_role(Y) === :dense) || return false
+    role = arg_role(X)
+    return role === :const || (role === :pattern && eltype(X) == eltype(Y))
+end
+
+function Mooncake.rrule!!(::CoDual{typeof(PatternVectors.pattern_dot)}, x::CoDual, y::CoDual)
+    xp, yp = primal(x), primal(y)
+    dy = tangent(y)
+    function pattern_dot_pb(Δ)
+        dy .+= xp .* Δ
+        rx = cotangent!(Val(arg_role(typeof(xp))), nothing, xp, instantiate(Broadcasted(Base.Broadcast.BroadcastStyle(typeof(yp)), *, (yp, Δ))))
+        return NoRData(), rx, NoRData()
+    end
+    return Mooncake.zero_fcodual(PatternVectors.pattern_dot(xp, yp)), pattern_dot_pb
+end
+
 end
