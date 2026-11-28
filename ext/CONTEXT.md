@@ -6,7 +6,7 @@ One extension per weak dependency; the package loads and works without any of th
 
 | Load | Why |
 |:--|:--|
-| `MooncakeExt.jl` | the reverse rule of `materialize_mixture` (mixed broadcasts): `arg_role`, one fused NDual pass per differentiable argument, `Partial` |
+| `MooncakeExt.jl` | the reverse rule of `materialize_mixture` (mixed broadcasts): `arg_role`, one fused NDual pass per differentiable argument, `Partial`; the reverse rule of `pattern_dot` (a PatternVector and a dense array, D-009) |
 | `ReactantExt.jl` | Reactant (XLA): a `PatternVector` reaches XLA as a fill, a concatenation of its bounds and an alternating pair (`traced_array`), pattern values behind an `optimization_barrier`, never as `n` values; traced indexing, `similar`/`collect` for traced pattern values (D-008, `references/reactant.md`) |
 | `ReverseDiffExt.jl` | `TrackedStyle` wins over both PatternVector styles; `dot` with a `TrackedArray` recorded as ReverseDiff does |
 | `SparseArraysExt.jl` | a PatternVector with a sparse vector promotes to the sparse style |

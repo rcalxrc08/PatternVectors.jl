@@ -1,7 +1,7 @@
 # Status
 
 _What is in flight. Layer 4: volatile, rewritten freely; GitHub issues are the source of truth for tasks, this file is
-the index an agent reads first._ Updated: 2026-11-27
+the index an agent reads first._ Updated: 2026-11-28
 
 ## Current focus
 
@@ -13,7 +13,8 @@ branch is merged.
 | Item | Branch | Issue | Next step |
 |:--|:--|:--|:--|
 | Layered context | `context-layers` | #22 | review, merge, push |
-| Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `main` (bfb9ab9) | #24 | merged; next a pattern-aware `dot` for traced arrays (strided sums, no weight array) |
+| Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `main` (bfb9ab9) | #24 | merged; strided sums for `dot` measured slower than the lazy reduction on the CPU, dropped |
+| `dot` as a lazy reduction, Mooncake rule on `pattern_dot` (D-009) | `lazy-dot` | PR | review; then FinancialFFT and VibratoMonteCarlo measure `dot` against `sum(w .* y)` again |
 
 ## Known issues
 
@@ -22,6 +23,7 @@ branch is merged.
 | FluxML/Zygote.jl#1602 | Zygote mis-differentiates dense references with `ifelse` | `@test_broken` cases |
 | local Enzyme on Julia 1.13 | `test_Enzyme.jl` aborted at line 37 locally (`handleKnownCallDerivatives`), not on CI | CI on 1.11 and 1.12 |
 | Enzyme on CUDA | fails on the MX150 even for dense `CuArray`s; `MixedDuplicated` with a `PatternVector` | not verifiable on this machine |
+| `dot` with a `SparseVector` | `MethodError`: ambiguous with SparseArrays' `dot(::AbstractVector, ::AbstractCompressedVector)` (on `main` before D-009 too) | `dot(collect(p), y)`; #25 |
 
 ## Technical debt
 

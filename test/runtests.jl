@@ -658,6 +658,19 @@ end
         @test_throws DimensionMismatch dot(p, randn(n + 1))
         @test_throws DimensionMismatch dot(randn(n + 1), p)
     end
+    # the lazy reduction with a dense array: every pattern, both parities, any array the broadcast accepts
+    for m in (8, 9), p in (PatternVector(m, EvenOddPattern(-1.0, 3.0)), PatternVector(m, InitialValuePattern(0.5, 2.0)), PatternVector(m, FinalValuePattern(2.0, 0.5)), PatternVector(m, PaddedFillPattern(0.5, 1.0, 0.5)), PatternVector(m, PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0)), PatternVector(m, ZeroPattern(0.0)), PatternVector(m, EvenOddPattern(1.0 + 2.0im, -1.0im)), PatternVector(m, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1))), PatternVector(m, EvenOddPattern(1.0f0, 2.0f0)))
+        p_dense = collect(p)
+        Y = randn(m, 2)
+        for v in (randn(m), randn(ComplexF64, m), randn(Float32, m), rand(-3:3, m), 1:m, view(Y, :, 2))
+            @test dot(p, v) ≈ dot(p_dense, v)
+            @test dot(v, p) ≈ dot(v, p_dense)
+        end
+    end
+    # no array of the products: the reduction allocates nothing proportional to the length
+    p_big, y_big = PatternVector(10^5 + 1, PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0)), randn(10^5 + 1)
+    dot(p_big, y_big)
+    @test (@allocated dot(p_big, y_big)) < 1000
     # ambiguities among the methods of this package (those with the methods of other packages depend on what is loaded)
     own(m) = parentmodule(m) === PatternVectors || startswith(string(parentmodule(m)), "ReverseDiffExt")
     @test isempty(filter(pair -> any(m -> m.name == :dot, pair) && all(own, pair), detect_ambiguities(PatternVectors)))

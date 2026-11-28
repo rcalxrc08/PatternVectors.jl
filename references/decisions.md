@@ -75,3 +75,17 @@ the reference each entry points to.
   `n` elements appears. On XLA CPU the structured weights of a reduction run 2-5x slower than a dense constant
   (YNNPACK fusion), accepted for the compile time and the program size.
 - **Status:** active
+
+## D-009 (2026-11-28) `dot` with a dense array is a lazy reduction, with its own Mooncake rule
+
+- **Decision:** `pattern_dot` reduces the lazy broadcast `dot.(x, y)` in the unwrapped style of the dense array
+  (`reduce_dot`) instead of materializing it; Mooncake gets a rule on `pattern_dot` for a PatternVector and a dense
+  array (real floats, or constant integer weights), a second hook next to `materialize_mixture` (amends D-001).
+- **Why:** the materialized products cost an array of `n` and a second pass: the lazy reduction is 4-7x faster on the
+  CPU and 2-3x on CUDA at 10^6, and every AD backend gains or stays equal (`autodiff.md`). Without its own rule
+  Mooncake differentiates the reduction element by element (20-50% slower on the CPU) and cannot differentiate
+  GPUArrays' `mapreduce` on CUDA; with it Mooncake gets 7-24% faster than before.
+- **Consequences:** the reduction must keep the unwrapped style (Base's reduction of a `PatternMixtureArrayStyle`
+  broadcast indexes element by element); any other Mooncake path for `dot` (complex, views, mixed precision) stays the
+  derived rule. FinancialFFT and VibratoMonteCarlo can measure `dot` again against `sum(w .* y)`.
+- **Status:** active

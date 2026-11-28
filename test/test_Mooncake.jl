@@ -151,3 +151,43 @@ end
     x = rand(10^4)
     @test allocated_after_compilation(Mooncake.build_rrule(long_expression, 0.3, 0.7, x), x) < 8 * sizeof(x)
 end
+
+# dot of a PatternVector and a dense array: a rule on pattern_dot (the cotangent of the dense array x .* Δ, of the
+# pattern values one reduction); other argument types keep the rule derived by Mooncake
+@testset "Mooncake rule for dot" begin
+    using LinearAlgebra
+    pd = PatternVectors.pattern_dot
+    is_prim(sig) = Mooncake.is_primitive(Mooncake.DefaultCtx, Mooncake.ReverseMode, sig, Base.get_world_counter())
+    eo, eo32 = PatternVector(9, EvenOddPattern(1.0, 2.0)), PatternVector(9, EvenOddPattern(1.0f0, 2.0f0))
+    simpson = PatternVector(9, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1)))
+    @test is_prim(Tuple{typeof(pd), typeof(eo), Vector{Float64}})
+    @test is_prim(Tuple{typeof(pd), typeof(simpson), Vector{Float64}})             # constant weights
+    @test !is_prim(Tuple{typeof(pd), typeof(eo32), Vector{Float64}})               # mixed precision: derived rule
+    @test !is_prim(Tuple{typeof(pd), typeof(eo), typeof(view(rand(9, 2), :, 1))}) # not a dense tangent: derived rule
+    @test !is_prim(Tuple{typeof(pd), typeof(PatternVector(9, EvenOddPattern(1.0im, 2.0 + 0.0im))), Vector{ComplexF64}}) # complex
+    @test !is_prim(Tuple{typeof(pd), typeof(eo), typeof(eo)})                      # two PatternVectors
+
+    gen(i, n, a, b, c, d) = ifelse(i == 1, a, ifelse(i == n, d, ifelse(isodd(i), c, b)))
+    pv(n, a, b, c, d) = PatternVector(n, PaddedEvenOddPattern(a, b, c, d))
+    dv(n, a, b, c, d) = gen.(1:n, n, a, b, c, d)
+    simpson_n(n) = PatternVector(n, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1)))
+    cases = (
+        ((a, b, c, d, x) -> dot(pv(length(x), a, b, c, d), exp.(x)), (a, b, c, d, x) -> dot(dv(length(x), a, b, c, d), exp.(x))),
+        ((a, b, c, d, x) -> dot(sin.(x), pv(length(x), a, b, c, d)), (a, b, c, d, x) -> dot(sin.(x), dv(length(x), a, b, c, d))),
+        ((a, b, c, d, x) -> a * dot(simpson_n(length(x)), x .^ 2), (a, b, c, d, x) -> a * dot(collect(simpson_n(length(x))), x .^ 2)),
+        ((a, b, c, d, x) -> dot(PatternVector(length(x), EvenOddPattern(a, b)), x) + dot(x, PatternVector(length(x), FillPattern(c))), (a, b, c, d, x) -> dot(ifelse.(isodd.(1:length(x)), a, b), x) + c * sum(x)),
+        ((a, b, c, d, x) -> dot(PatternVector(length(x), InitialValuePattern(a, b)), x .* d), (a, b, c, d, x) -> dot(ifelse.(1:length(x) .== 1, a, b), x .* d)),
+    )
+    for n in (8, 9), (f_pv, f_ref) in cases
+        args = (0.3, -1.2, 0.7, 2.1, rand(n))
+        v, g = Mooncake.value_and_gradient!!(Mooncake.build_rrule(f_pv, args...), f_pv, args...)
+        v_ref, g_ref = Mooncake.value_and_gradient!!(Mooncake.build_rrule(f_ref, args...), f_ref, args...)
+        @test v ≈ v_ref
+        @test all(g[2:end] .≈ g_ref[2:end])
+    end
+    # the rule itself on a PatternVector argument: the cotangents of the pattern values, reduced in one pass
+    x = rand(9)
+    _, (_, gp, gx) = Mooncake.value_and_gradient!!(Mooncake.build_rrule(pd, eo, x), pd, eo, x)
+    @test all(values(gp.fields.pattern.fields) .≈ (sum(x[1:2:end]), sum(x[2:2:end])))
+    @test gx ≈ collect(eo)
+end

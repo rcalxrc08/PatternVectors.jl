@@ -11,7 +11,13 @@ function check_dot_lengths(x, y)
     return nothing
 end
 const FillPatternVector{T} = PatternVector{T, FillPattern{T}}
-pattern_dot(x::PatternVector, y) = sum(dot.(x, y))
+pattern_dot(x::PatternVector, y) = reduce_dot(Broadcast.combine_styles(x, y), x, y)
+# With a dense array: the reduction of the lazy broadcast, in the style of the dense array, so that it is one pass on
+# its device (GPUArrays' mapreduce on a GPU, Reactant's on a traced array) and no array of the n products is built.
+# The style must be the unwrapped one: Base's reduction of a PatternMixtureArrayStyle indexes element by element.
+reduce_dot(style::PatternMixtureArrayStyle, x, y) = sum(Broadcast.instantiate(Broadcast.Broadcasted(get_style(style), dot, (x, y))))
+# Two PatternVectors: the broadcast is evaluated on the pattern values, a PatternVector
+reduce_dot(_, x, y) = sum(dot.(x, y))
 # a fill needs a single reduction of the other vector
 pattern_dot(x::FillPatternVector, y) = dot(x.pattern.value, sum(y))
 

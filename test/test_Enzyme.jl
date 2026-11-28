@@ -74,3 +74,21 @@ end
     f(p) = sum(p .* p)
     @test enzyme_pattern_fields(Enzyme.autodiff(Reverse, f, Active, Active(pv))[1][1]) == (2.0, 4.0 * (n - 2) / 2, 6.0 * (n - 2) / 2, 8.0)
 end
+
+@testset "Enzyme dot of a PatternVector and a dense array" begin
+    using LinearAlgebra
+    for n in (8, 9), pattern in (EvenOddPattern(1.0, 2.0), PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0), InitialValuePattern(0.5, 1.0))
+        pv = PatternVector(n, pattern)
+        x = rand(n)
+        f(p, x) = dot(p, exp.(x)) + dot(sin.(x), p)
+        dx = zero(x)
+        dpv = Enzyme.autodiff(Reverse, Const(f), Active, Active(pv), Duplicated(x, dx))[1][1]
+        _, (_, mpv, mx) = Mooncake.value_and_gradient!!(Mooncake.build_rrule(f, pv, x), f, pv, x)
+        @test Float64[enzyme_pattern_fields(dpv)...] ≈ Float64[mooncake_pattern_fields(mpv)...]
+        @test dx ≈ mx
+        @test dx ≈ collect(pv) .* (exp.(x) .+ cos.(x))
+        # forward mode along one direction
+        d = rand(n)
+        @test only(Enzyme.autodiff(Forward, Const(x -> dot(pv, exp.(x))), Duplicated(x, d))) ≈ dot(collect(pv), exp.(x) .* d)
+    end
+end

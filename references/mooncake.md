@@ -18,6 +18,10 @@ Status as of 2026-11-02: the rule described here is on `main`, on top of 0.1.5 (
 - `ext/MooncakeExt.jl` (84 lines): reverse rule for `materialize_mixture`, one code path for every array
   type, written for cheap broadcasts such as Simpson weights (`h / 3 * sum(W .* y)`).
   - Enabled per signature through `Mooncake._is_primitive`; otherwise Mooncake's derived rule is used.
+- A second rule, on `pattern_dot` (2026-11-28, D-009): `dot` with a dense array is a lazy reduction, which Mooncake
+  would differentiate element by element (and not at all on GPUArrays' `mapreduce`). Cotangent of the dense array
+  `x .* Δ`, of the pattern values `cotangent!` on `y .* Δ`; real floats of one type or constant integer weights,
+  otherwise the derived rule. Measurements in `autodiff.md`.
     Requirements: an `AbstractArrayStyle`, singleton `f` with no tangent, args being float arrays whose
     tangent type is the array itself (`Array`, `CuArray`), IEEEFloat scalars, `PatternVector`s with all pattern
     fields of eltype T, or non-differentiable constants (`Ref`s of them as in `literal_pow`, PatternVectors

@@ -162,10 +162,20 @@ end
     using LinearAlgebra
     N = 11
     x = CuArray(randn(N))
-    for p in (PatternVector(N, FillPattern(2.0)), PatternVector(N, EvenOddPattern(-2.0, 3.0)))
+    for p in (PatternVector(N, FillPattern(2.0)), PatternVector(N, EvenOddPattern(-2.0, 3.0)), PatternVector(N, PaddedEvenOddPattern(1.0, 4.0, 2.0, 1.0)), PatternVector(N, InitialValuePattern(0.5, 1.0)), PatternVector(N, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1))))
         @test dot(p, x) ≈ dot(collect(p), collect(x))
         @test dot(x, p) ≈ dot(collect(x), collect(p))
+        @test dot(p, view(x, :)) ≈ dot(collect(p), collect(x))
     end
+    # Zygote and Mooncake (rule for dot) w.r.t. the dense array and the pattern values, on the device
+    xf = CUDA.rand(Float32, 1001)
+    f_dot(a, b, x) = dot(PatternVector(length(x), EvenOddPattern(a, b)), exp.(x))
+    ref_x = collect(PatternVector(1001, EvenOddPattern(0.5f0, 2.0f0))) .* exp.(Array(xf))
+    ref_ab = (sum(exp.(Array(xf))[1:2:end]), sum(exp.(Array(xf))[2:2:end]))
+    gz = Zygote.gradient(f_dot, 0.5f0, 2.0f0, xf)
+    @test gz[3] isa CuArray && Array(gz[3]) ≈ ref_x && all(gz[1:2] .≈ ref_ab)
+    _, gm = Mooncake.value_and_gradient!!(Mooncake.build_rrule(f_dot, 0.5f0, 2.0f0, xf), f_dot, 0.5f0, 2.0f0, xf)
+    @test gm[4] isa CuArray && Array(gm[4]) ≈ ref_x && isapprox(gm[2], ref_ab[1]; rtol = 1.0f-4) && isapprox(gm[3], ref_ab[2]; rtol = 1.0f-4)
     # the cotangent of sum is a PatternVector, and the pullback of a * x computes dot(Ȳ, x)
     @test Zygote.gradient(a -> sum(a * x), 2.0)[1] ≈ sum(collect(x))
 end
