@@ -12,7 +12,7 @@ How the suite is organized, how to run a part of it, what CI runs.
 | `test_ReverseDiff.jl` | broadcast style, gradients, `dot` |
 | `test_Enzyme.jl` | Enzyme vs Zygote (scalars), vs Mooncake (pattern gradients), size independence, `dot` (reverse and forward) |
 | `cuda_tests.jl` | Zygote and Mooncake on `CuArray`s, `dot` (every pattern, views, gradients); needs a GPU, not run by `runtests.jl` |
-| `reactant/runtests.jl` | Reactant (XLA): values against plain Julia, no constant of `n` values in the program, traced pattern values, Enzyme; own environment, not run by `runtests.jl` nor on CI |
+| `reactant/runtests.jl` | Reactant (XLA): values against plain Julia, no constant of `n` values in the program, `dot` with constant and integer weights, traced pattern values, Enzyme; own environment, not run by `runtests.jl` nor on CI |
 | `context.jl` | the check that keeps the context layers in sync with the code |
 | `references/testing.md` | what each file checks, reference values, local versus CI differences |
 | `references/workflows.md` | commands, CI matrix, sub-environments |

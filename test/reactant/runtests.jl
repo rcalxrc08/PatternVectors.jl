@@ -51,6 +51,13 @@ collected(a) = collect(traced_pattern(a))
         @test tonumber(@jit(quadrature(xr))) ≈ sum(w .* exp.(x)) rtol = 1e-13
         @test largest_constant(quadrature, xr) < n
         @test largest_xla_constant(quadrature, xr) < n
+        # dot with a traced array: the lazy reduction in Reactant's style (D-009), both argument orders
+        dotted_constant(x) = dot(w, exp.(x))
+        dotted_reversed(x) = dot(exp.(x), w)
+        @test tonumber(@jit(dotted_constant(xr))) ≈ dot(w, exp.(x)) rtol = 1e-13
+        @test tonumber(@jit(dotted_reversed(xr))) ≈ dot(exp.(x), w) rtol = 1e-13
+        @test largest_constant(dotted_constant, xr) < n
+        @test largest_xla_constant(dotted_constant, xr) < n
     end
     @testset "Float32" begin
         w = PatternVector(n, PaddedEvenOddPattern(1.0f0 / 3, 4.0f0 / 3, 2.0f0 / 3, 1.0f0 / 3))
@@ -86,5 +93,13 @@ collected(a) = collect(traced_pattern(a))
         @test Array(@jit(Enzyme.gradient(Reverse, weighted, Const(abr), xr))[2]) ≈ w .* e rtol = 1e-14
         tangent = Reactant.to_rarray([1.0, 0.0, 0.0, 0.0])
         @test tonumber(only(@jit(Enzyme.autodiff(Forward, weighted, Duplicated(abr, tangent), Const(xr))))) ≈ e[1] rtol = 1e-14
+        # a quadrature with constant integer weights (Simpson) through dot: value, gradient, no constant of n values
+        simpson = PatternVector(n, PaddedEvenOddPattern(Int8(1), Int8(4), Int8(2), Int8(1)))
+        simpson_rule(x) = dot(simpson, exp.(x)) / 3
+        simpson_gradient(x) = Enzyme.gradient(Reverse, simpson_rule, x)[1]
+        @test tonumber(@jit(simpson_rule(xr))) ≈ dot(collect(simpson), e) / 3 rtol = 1e-13
+        @test Array(@jit(simpson_gradient(xr))) ≈ collect(simpson) .* e ./ 3 rtol = 1e-14
+        @test largest_xla_constant(simpson_rule, xr) < n
+        @test largest_xla_constant(simpson_gradient, xr) < n
     end
 end

@@ -14,7 +14,7 @@ branch is merged.
 |:--|:--|:--|:--|
 | Layered context | `context-layers` | #22 | review, merge, push |
 | Reactant extension: PatternVectors reach XLA as fills, concatenations and broadcasts of the pattern values, never as `n` values (D-008) | `main` (bfb9ab9) | #24 | merged; strided sums for `dot` measured slower than the lazy reduction on the CPU, dropped |
-| `dot` as a lazy reduction, Mooncake rule on `pattern_dot` (D-009) | `lazy-dot` | PR | review; then FinancialFFT and VibratoMonteCarlo measure `dot` against `sum(w .* y)` again |
+| `dot` as a lazy reduction, Mooncake rule on `pattern_dot` (D-009) | `lazy-dot` | #26 | review; then FinancialFFT and VibratoMonteCarlo measure `dot` against `sum(w .* y)` again |
 
 ## Known issues
 
